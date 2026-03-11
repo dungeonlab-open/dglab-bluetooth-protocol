@@ -168,7 +168,7 @@ function handleStrengthAdjust(data, ws) {
 
   if (!result.success) {
     const errorResponse = {
-      type: 'bind',
+      type: 'error',
       clientId: data.clientId,
       targetId: data.targetId,
       message: result.code
@@ -189,7 +189,7 @@ function handleCustomStrength(data, ws) {
 
   if (!result.success) {
     const errorResponse = {
-      type: 'bind',
+      type: 'error',
       clientId: data.clientId,
       targetId: data.targetId,
       message: result.code

@@ -29,23 +29,27 @@ const waveData = {
 
 /*
  * ========== 消息格式说明 (v2) ==========
+ * 代码中所有ws:// 链接都得替换成实际服务器地址
  *
  * 所有消息统一格式: { type, clientId, targetId, message, ...extras }
  *
  * --- 前端 → 服务端 ---
- * type 1   : 强度减少1    extras: { channel: 1|2 }
- * type 2   : 强度增加1    extras: { channel: 1|2 }
- * type 3   : 强度设置到   extras: { channel: 1|2, strength: 目标值 }
- * type 4   : 直接转发APP  message 为 APP 协议原始指令 (如 "clear-1")
- * clientMsg: 发送波形     extras: { channel: "A"|"B", time: 秒数 }
- *                         message 为 "通道前缀:波形数据"
+ * type 1        : 强度减少1    extras: { channel: 1|2 }
+ * type 2        : 强度增加1    extras: { channel: 1|2 }
+ * type 3        : 强度设置到   extras: { channel: 1|2, strength: 目标值 }
+ * type 4        : 直接转发APP  message 为 APP 协议原始指令 (如 "clear-1")
+ * type clientMsg: 发送波形     extras: { channel: "A"|"B", time: 秒数 }
+ *                              message 为 "通道前缀:波形数据"
+ *
+ * --- 服务端 → APP ---
+ * type msg : 统一封装后转发 (strength-X+X+X / pulse-X / clear-X 等)
  *
  * --- 服务端 → 前端 ---
- * bind     : 绑定相关 (初始分配clientId / 配对结果)
- * msg      : APP转发消息 (strength / feedback / pulse 等)
- * break    : 对方断开连接
- * error    : 错误信息
- * heartbeat: 心跳包
+ * type bind     : 绑定相关 (初始分配clientId / 配对结果 200=成功 400/401=失败)
+ * type msg      : APP转发消息 (strength-X-X-X-X / feedback-X 等)
+ * type break    : 对方断开连接 (message: 209)
+ * type error    : 错误信息 (message: 402=配对无效 404=未找到 406=缺少channel 500=服务端错误)
+ * type heartbeat: 心跳包
  * =======================================
  */
 
@@ -77,8 +81,8 @@ function connectWs() {
                     //qrcodeImg.makeCode("https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#ws://12.34.56.78:9999/" + connectionId);
                     qrcodeImg.makeCode("https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#ws://10.31.1.183:9999/" + connectionId);
                 }
-                else {
-                    // 配对结果
+                else if (message.message === '200') {
+                    // 配对成功
                     if (message.clientId != connectionId) {
                         alert('收到不正确的target消息' + message.message)
                         return;
@@ -92,6 +96,11 @@ function connectWs() {
                     console.log("收到targetId: " + message.targetId + " msg: " + message.message);
                     hideqrcode();
                 }
+                else {
+                    // 配对失败 (400=已被配对 401=客户端未连接)
+                    console.log("绑定失败，code: " + message.message);
+                    showToast("绑定失败: " + message.message);
+                }
                 break;
             case 'break':
                 // 对方断开连接
@@ -101,32 +110,12 @@ function connectWs() {
                 location.reload();
                 break;
             case 'error':
-                if (message.targetId != targetWSId)
-                    return;
-                console.log(message);
-                showToast(message.message);
+                // 服务端错误 (402=配对无效 404=未找到 406=缺少channel 500=服务端错误)
+                console.log("收到错误：", message);
+                showToast("错误 [" + message.message + "]");
                 break;
             case 'msg':
-                if (message.message.includes("strength")) {
-                    // APP回传的强度数据: strength-{A强度}-{B强度}-{A软上限}-{B软上限}
-                    const numbers = message.message.match(/\d+/g).map(Number);
-                    document.getElementById("channel-a").innerText = numbers[0];
-                    document.getElementById("channel-b").innerText = numbers[1];
-                    document.getElementById("soft-a").innerText = numbers[2];
-                    document.getElementById("soft-b").innerText = numbers[3];
-
-                    // 跟随软上限: 当软上限与当前强度不一致时，自动设置强度到软上限
-                    if (followAStrength && numbers[2] !== numbers[0]) {
-                        sendWsMsg({ type: 3, channel: 1, strength: numbers[2], message: "set channel" });
-                    }
-                    if (followBStrength && numbers[3] !== numbers[1]) {
-                        sendWsMsg({ type: 3, channel: 2, strength: numbers[3], message: "set channel" });
-                    }
-                }
-                else if (message.message.includes("feedback")) {
-                    // APP按钮反馈
-                    showSuccessToast(feedBackMsg[message.message]);
-                }
+                handleAppMessage(message);
                 break;
             case 'heartbeat':
                 console.log("收到心跳");
@@ -139,7 +128,12 @@ function connectWs() {
                 }
                 break;
             default:
-                console.log("收到其他消息：" + JSON.stringify(message));
+                // APP转发消息可能以非 'msg' 类型到达，兜底处理
+                if (message.message && (message.message.includes("strength") || message.message.includes("feedback"))) {
+                    handleAppMessage(message);
+                } else {
+                    console.log("收到其他消息：" + JSON.stringify(message));
+                }
                 break;
         }
     };
@@ -155,6 +149,36 @@ function connectWs() {
 
 // 自动连接
 connectWs();
+
+/**
+ * 处理 APP 转发的消息（strength / feedback 等）
+ * 服务端通过 forwardMessage 或 type:'msg' 转发过来
+ */
+function handleAppMessage(message) {
+    if (message.message.includes("strength")) {
+        // APP回传的强度数据: strength-{A强度}-{B强度}-{A软上限}-{B软上限}
+        const numbers = message.message.match(/\d+/g).map(Number);
+        document.getElementById("channel-a").innerText = numbers[0];
+        document.getElementById("channel-b").innerText = numbers[1];
+        document.getElementById("soft-a").innerText = numbers[2];
+        document.getElementById("soft-b").innerText = numbers[3];
+
+        // 跟随软上限: 当软上限与当前强度不一致时，自动设置强度到软上限
+        if (followAStrength && numbers[2] !== numbers[0]) {
+            sendWsMsg({ type: 3, channel: 1, strength: numbers[2], message: "set channel" });
+        }
+        if (followBStrength && numbers[3] !== numbers[1]) {
+            sendWsMsg({ type: 3, channel: 2, strength: numbers[3], message: "set channel" });
+        }
+    }
+    else if (message.message.includes("feedback")) {
+        // APP按钮反馈
+        showSuccessToast(feedBackMsg[message.message]);
+    }
+    else {
+        console.log("收到APP消息：" + JSON.stringify(message));
+    }
+}
 
 /**
  * 统一消息发送 — 自动填充 clientId 和 targetId

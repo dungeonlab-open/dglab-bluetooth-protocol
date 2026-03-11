@@ -1,282 +1,371 @@
-## SOCKET 控制-控制端开源
-
-### 更新
-
-time : 2025-03-15
-
-desc:
-
-新增 ws 服务核心方法讲解-JavaScript
-
-### 更新
-
-time : 2024-09-014
-
-desc :
-
-新增 QA：
-
-[English_QA](QA/Websocket_open_source_QA_English.txt)
-[Chinese_QA](QA/Websocket_open_source_QA_Chinese.txt)
+## SOCKET 控制 - 开源控制端 (v2)
 
 ### 说明
 
-SOCKET 控制功能，是 DG-LAB APP 通过 Socket 服务连接到外部第三方控制端，控制端通过 SOCKET 向 APP 发送数据指令使郊狼进行脉冲输出的功能。开发者可以通过网页，游戏，脚本或其他终端在局域网环境或公网环境中对郊狼进行控制。
+SOCKET 控制功能，是 DG-LAB APP 通过 WebSocket 服务连接到外部第三方控制端，控制端通过 SOCKET 向 APP 发送数据指令使郊狼进行脉冲输出的功能。开发者可以通过网页、游戏、脚本或其他终端在局域网环境或公网环境中对郊狼进行控制。
 
-该功能仅支持 郊狼脉冲主机 3.0
+该功能仅支持 **郊狼脉冲主机 3.0**
 
-### 项目
+### 设计方案
 
-我们提供的官网示例分为两部分，前端控制部分(逻辑控制，数据展示，行为操作，指令数据生成等)和 SOCKET 后端部分(关系绑定，数据转发等)。
+N(APP 终端) ↔ SOCKET 服务 ↔ N(第三方终端) 的 **N 对 N** 模式，方便开发者制作的控制端可以同时多人使用。
 
-我们设计的方案是 N(APP 终端)-SOCKET 服务-N(第三方终端)的 N 对 N 模式，方便开发者制作的控制端可以同时多人使用。
+项目分为两部分：
+- **前端控制部分** — 逻辑控制、数据展示、行为操作、指令数据生成等
+- **WebSocket 后端部分** — 关系绑定、消息验证、数据转发、波形队列管理等
 
 ### 项目结构
 
-/socket/BackEnd(Node) -> SOCKET 控制后端代码，部署文档可见 /socket/BackEnd(Node)/document.txt
+```
+socket/
+├── README.md                    # 本文档
+├── Quick Experience Guide.md    # 快速体验指南
+├── 快速体验.md
+├── QA/                          # 常见问题
+│   ├── Websocket_open_source_QA_Chinese.txt
+│   └── Websocket_open_source_QA_English.txt
+├── v2/                          # ✅ 推荐使用
+│   ├── backend/                 # WebSocket 后端 (Node.js)
+│   │   ├── src/
+│   │   │   ├── index.js         # 主入口，启动服务器 & 消息路由
+│   │   │   ├── config.js        # 配置管理（支持 .env 环境变量）
+│   │   │   ├── connection.js    # 连接管理（注册、配对、断开）
+│   │   │   ├── message.js       # 消息处理（验证、转发、强度/波形）
+│   │   │   ├── timer.js         # 定时器管理（波形消息队列发送）
+│   │   │   └── logger.js        # 日志模块（winston）
+│   │   └── package.json
+│   └── frontend/                # 前端控制页面 (HTML+CSS+JS)
+│       ├── index.html
+│       ├── index.js
+│       ├── index.css
+│       └── wsConnection.js      # WebSocket 通信核心
+└── v1/                          # ⚠️ 旧版（不推荐使用，仅供参考）
+```
 
-/socket/FrontEnd(Html+Css+Js) -> SOCKET 控制前端代码，部署文档可见 /socket/FrontEnd(Html+Css+Js)/document.txt
+### 快速开始
 
-![项目结构](/image/socket_project.png)
+#### 1. 启动后端
 
-### 两端连接流程
+```bash
+cd socket/v2/backend
+npm install
+npm start          # 生产模式
+# 或
+npm run dev        # 开发模式（自动重启）
+```
 
-由于我们设计的方案是 N 对 N 的模式，所以两端需要通过关系绑定的流程来连接到一起。
+默认监听端口 `9999`，可通过 `.env` 文件配置：
 
-![两端连接流程](/image/socket_bind.png)
+| 变量                          | 默认值 | 说明                     |
+| ----------------------------- | ------ | ------------------------ |
+| `PORT`                        | 9999   | WebSocket 服务端口       |
+| `HEARTBEAT_INTERVAL`          | 60000  | 心跳间隔（毫秒）         |
+| `DEFAULT_PUNISHMENT_TIME`     | 1      | 波形发送频率（每秒次数） |
+| `DEFAULT_PUNISHMENT_DURATION` | 5      | 波形默认持续时间（秒）   |
+| `LOG_LEVEL`                   | info   | 日志级别                 |
 
-### APP 收信协议
+#### 2. 打开前端
 
-#### 总则
+用浏览器打开 `socket/v2/frontend/index.html`，修改 `wsConnection.js` 中的 WebSocket 地址为你的实际服务器地址。
 
-1. 所有的消息全部都是 json 格式
-2. json 格式: {"type":"xxx","clientId":"xxx","targetId":"xxx","message":"xxx"}
-3. type 指令:
-   1. heartbeat -> 心跳包数据
-   2. bind -> ID 关系绑定
-   3. msg -> 波形下发/强度变化/队列清空等数据指令
-   4. break -> 连接断开
-   5. error -> 服务错误
-4. clientID: 第三方终端 ID
-5. targetId: APP ID
-6. message: 消息/指令
-7. json 数据的字符最大长度为 1950，若超过该长度，APP 收到数据将会丢弃该消息
-8. 除 SOCKET 连接时由 SOCKET 向终端返回 ID 的 json 数据 targetId 可以为空外，其他所有指令都必须且仅包含 type,clientId,targetId,message 这 4 个 key，并且 value 不能为空
-9. SOCKET 服务生成的 ID 必须保证唯一，长度推荐 32 位(uuidV4)
+#### 3. 连接 APP
 
-#### 关系绑定
+1. 打开 DG-LAB APP → SOCKET 功能
+2. 前端页面右上角的【连接】点击后会显示二维码
+3. APP 打开SOCKET控制后，点击连接服务器，扫描二维码即可完成配对
 
-1. SOCKET 通道与终端绑定：终端或 APP 连接 SOCKET 服务后，生成唯一 ID，并与终端或 APP 的 websocket 对象绑定存储在 Map 中，向终端或 APP 返回 ID
+---
 
-   SOCKET 向终端或 APP 返回的数据: {"type":"bind","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"","message":"targetId"}
+### 消息格式总则
 
-   终端或 APP 收到 type = bind，message = targetID 时，表明为 SOCKET 服务返回的 clientId 为当前终端或 APP 的 ID，本地保存。
+所有消息均为 **JSON 格式**，统一包含以下字段：
 
-2. 两边终端的关系绑定: DG-LAB APP 将两边终端的 ID 发送给 SOCKET 服务后，服务将两个 ID 绑定存储在 Map 中
+```json
+{ "type": "xxx", "clientId": "xxx", "targetId": "xxx", "message": "xxx" }
+```
 
-   APP 向上发送的 ID 数据: {"type":"bind","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"DGLAB"}
+| 字段       | 说明                       |
+| ---------- | -------------------------- |
+| `type`     | 消息类型（见下方详细说明） |
+| `clientId` | 第三方终端 ID（网页端）    |
+| `targetId` | APP 端 ID                  |
+| `message`  | 消息内容 / 指令            |
 
-   SOCKET 服务收到 type = bind，message = DGLAB，且 clientId，targetId 不为空时，会将 clientId(第三方终端 ID)和 targetId(APP ID)进行绑定。
+> ⚠️ JSON 数据的字符最大长度为 **1950**，超过该长度 APP 会丢弃该消息
+>
+> ⚠️ 除初始连接时服务端返回 clientId 的消息 `targetId` 可为空外，其他所有消息必须包含以上 4 个字段且 value 不为空
+>
+> ⚠️ SOCKET 服务生成的 ID 必须保证唯一，推荐使用 UUID v4
 
-3. 绑定结果由 SOCKET 服务下发绑定关系的两个 ID 对应的终端或 APP
+---
 
-   SOCKET 下发的结果数据: {"type":"bind","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"200"}
+### 消息流程概览
 
-   终端或 APP 收到 type = bind，message = 200(或其他指定数据，详细请见错误码)时，执行对应 UI 逻辑
+```
+┌──────────┐         ┌──────────────┐         ┌──────────┐
+│  前端     │  ──→    │  WebSocket   │  ──→    │  APP     │
+│ (网页端)  │  ←──    │    服务端     │  ←──    │ (DG-LAB) │
+└──────────┘         └──────────────┘         └──────────┘
+```
 
-#### 接收强度数据
+#### 连接配对流程
 
-APP 中的通道强度或强度上限变化时，会向上同步当前最新的通道强度和强度上限。
+```
+1. 前端连接 WS 服务               → 服务端分配 clientId 返回给前端
+2. 前端生成二维码（含 WS 地址 + clientId）
+3. APP 扫码后连接 WS 服务          → 服务端分配 targetId 返回给 APP
+4. APP 发送 bind 请求（clientId + targetId）
+5. 服务端建立配对关系              → 向双方发送绑定成功消息 (message: "200")
+6. 配对完成，双方可以开始通信
+```
 
-APP 向上发送强度数据: {"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"strength-x+x+x+x"}
+#### 强度控制流程
 
-SOCKET 根据对应的 ID 将 json 转发给第三方终端，终端收到 type = msg，message = strength-x+x+x+x 的数据时，更新 UI(更新最新的设备通道强度和强度上限)
+```
+前端                    服务端                     APP
+ │                        │                         │
+ │  type:1/2/3            │                         │
+ │  (减少/增加/设置强度)     │                         │
+ │───────────────────────→│                         │
+ │                        │  type:"msg"             │
+ │                        │  strength-通道+模式+数值  │
+ │                        │────────────────────────→│
+ │                        │                         │
+ │                        │  type:"msg"             │
+ │                        │  strength-A强度+B强度    │
+ │                        │  +A上限+B上限（回传）     │
+ │                        │←────────────────────────│
+ │  type:任意(APP原始类型)  │                         │
+ │  strength-...(转发)     │                         │
+ │←────────────────────── │                         │
+```
 
-指令解释:
+#### 波形发送流程
 
-1. strength-A 通道强度+B 通道强度+A 强度上限+B 强度上限
-2. 通道强度和强度上限的值范围在 0 ～ 200
+```
+前端                    服务端                     APP
+ │                        │                         │
+ │  type:"clientMsg"      │                         │
+ │  channel:"A"/"B"       │                         │
+ │  message:"A:波形数据"   │                         │
+ │───────────────────────→│                         │
+ │                        │  type:"msg"             │
+ │                        │  pulse-A:波形数据        │
+ │                        │  (按频率定时发送)         │
+ │                        │────────────────────────→│
+ │                        │────────────────────────→│
+ │                        │  ... (重复至 time 期满)   │
+```
+
+---
+
+### 前端 → 服务端 消息格式
+
+前端发送的消息由服务端转换为 APP 协议格式后转发给 APP。
+
+> ⚠️ **前端协议的消息不能直接发送给 APP**，APP 无法解析
+
+#### 强度减少 (type: 1)
+
+```json
+{ "type": 1, "channel": 1, "message": "set channel", "clientId": "xxx", "targetId": "xxx" }
+```
+- `channel`: `1` = A 通道，`2` = B 通道
+- 服务端转换后发给 APP: `strength-通道+0+1`（减少 1）
+
+#### 强度增加 (type: 2)
+
+```json
+{ "type": 2, "channel": 1, "message": "set channel", "clientId": "xxx", "targetId": "xxx" }
+```
+- 服务端转换后发给 APP: `strength-通道+1+1`（增加 1）
+
+#### 强度设置到指定值 (type: 3)
+
+```json
+{ "type": 3, "channel": 2, "strength": 35, "message": "set channel", "clientId": "xxx", "targetId": "xxx" }
+```
+- `strength`: 目标强度值（0 ~ 200）
+- 服务端转换后发给 APP: `strength-通道+2+目标值`（设为指定值）
+
+#### 直接转发 APP 指令 (type: 4)
+
+```json
+{ "type": 4, "message": "clear-1", "clientId": "xxx", "targetId": "xxx" }
+```
+- `message` 内容直接作为 APP 指令转发（如 `clear-1` 清空 A 通道波形队列）
+
+#### 发送波形 (type: "clientMsg")
+
+```json
+{ "type": "clientMsg", "channel": "A", "time": 5, "message": "A:[\"0A0A0A0A64646464\",...]", "clientId": "xxx", "targetId": "xxx" }
+```
+- `channel`: `"A"` 或 `"B"`
+- `time`: 波形持续发送时长（秒），默认 5 秒
+- `message`: `通道:波形HEX数组JSON`
+- 服务端会加上 `pulse-` 前缀后按频率定时发送给 APP
+
+---
+
+### 服务端 → APP 消息格式
+
+服务端发给 APP 的消息统一为 `type: "msg"` 格式：
+
+```json
+{ "type": "msg", "clientId": "xxx", "targetId": "xxx", "message": "指令内容" }
+```
+
+#### 强度操作指令
+
+`message`: `strength-通道+模式+数值`
+
+| 字段 | 说明                                     |
+| ---- | ---------------------------------------- |
+| 通道 | `1` = A 通道，`2` = B 通道               |
+| 模式 | `0` = 减少，`1` = 增加，`2` = 设为指定值 |
+| 数值 | 0 ~ 200                                  |
 
 举例：
+- `strength-1+1+5` → A 通道强度 +5
+- `strength-2+2+0` → B 通道强度归零
+- `strength-1+2+35` → A 通道强度设为 35
 
-数据：{"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"strength-11+7+100+35"}
+> ⚠️ 指令必须严格按照协议编写，非法指令会被 APP 丢弃
 
-解释：strength-11+7+100+35 表示：当前设备 A 通道强度=11，B 通道强度=7，A 通道强度上限=100，B 通道强度上限=35
+#### 波形操作指令
 
-#### 强度操作
+`message`: `pulse-通道:["HEX波形数据",...]`
 
-第三方终端要修改设备通道强度时，发送指定的 json 指令。
+- 通道: `A` 或 `B`
+- 波形数据: 8 字节 HEX 格式，每条代表 100ms
+- 数组最大长度 100（10 秒数据），APP 波形队列最大缓存 500 条（50 秒）
+- 波形数据详情参考 socket/DG_WAVES_V2_V3_simple.js 中 **expectedV3** 内容
 
-终端向下发送强度操作数据: {"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"strength-x+x+x"}
-
-SOCKET 服务根据对应的 ID 将 json 转发给 APP，APP 收到 type = msg，message = strength-x+x+x 的数据时，执行指定强度变化操作
-
-指令解释:
-
-1. strength-通道+强度变化模式+数值
-2. 通道: 1 - A 通道；2 - B 通道
-3. 强度变化模式: 0 - 通道强度减少；1 - 通道强度增加；2 - 通道强度变化为指定数值
-4. 数值: 范围在(0 ~ 200)的整型
-
-举例：
-
-1. A 通道强度+5 -> strength-1+1+5
-2. B 通道强度归零 -> strength-2+2+0
-3. B 通道强度-20 -> strength-2+0+20
-4. A 通道强度指定为 35 -> strength-1+2+35
-
-- Tips 指令必须严格按照协议编辑，任何非法的指令都会在 APP 端丢弃，不会执行
-
-#### 波形操作
-
-第三方终端要下发通道波形数据时，发送指定的 json 指令
-
-终端向下发送波形数据: {"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"pulse-x:[\"xxxxxxxxxxxxxxxx\",\"xxxxxxxxxxxxxxxx\",......,\"xxxxxxxxxxxxxxxx\"]"}
-
-SOCKET 服务根据对应的 ID 将 json 转发给 APP，APP 收到 type = msg，message = pulse-x:[] 的数据时，执行波形输出操作
-
-指令解释:
-
-1. pulse-通道:[波形数据,波形数据,......,波形数据]
-2. 通道: A - A 通道；B - B 通道
-3. 数据[波形数据,波形数据,......,波形数据]: 数组最大长度为 100，若超出范围则 APP 会丢弃全部数据
-4. 波形数据必须是 8 字节的 HEX(16 进制)形式。波形数据详情请参考 [郊狼情趣脉冲主机 V3 的蓝牙协议](../coyote/v3/README_V3.md)
-
-- Tips 每条波形数据代表了 100ms 的数据，所以若每次发送的数据有 10 条，那么就是 1s 的数据，由于网络有一定延时，若要保证波形输出的连续性，建议波形数据的发送间隔略微小于波形数据的时间长度(< 1s)
-- Tips 数组最大长度为 100,也就是最多放置 10s 的数据，另外 APP 中的波形队列最大长度为 500，即为 50s 的数据，若后接收到的数据无法全部放入波形队列，多余的部分会丢弃。所以谨慎考虑您的数据长度和数据发送间隔
+> 💡 为保证波形输出连续性，建议发送间隔略小于波形数据时长
 
 #### 清空波形队列
 
-APP 中的波形执行是基于波形队列，遵循先进先出的原则，并且队列可以缓存 500 条波形数据(50s 的数据)。
+`message`: `clear-通道`
 
-当波形队列中还有尚未执行完的波形数据时，第三方终端希望立刻执行新的波形数据，则需要先将对应通道的波形队列执行清空操作后，再发送波形数据，即可实现立刻执行新的波形数据的需求。
+- `clear-1` → 清空 A 通道波形队列
+- `clear-2` → 清空 B 通道波形队列
 
-终端向下发送清空波形队列数据: {"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"clear-x"}
+> 💡 建议清空指令下发后稍等片刻再发送新波形数据，避免网络延迟导致数据丢失
 
-SOCKET 服务根据对应的 ID 将 json 转发给 APP，APP 收到 type = msg，message = clear-x 的数据时，执行指定通道波形队列清空操作
+---
 
-指令解释:
+### APP → 服务端 → 前端 消息格式
 
-1. clear-通道
-2. 通道: 1 - A 通道；2 - B 通道
+APP 发送的消息由服务端转发给前端。
 
-- Tips 建议清空波形队列指令下发后，设定一个时间间隔后再下发新的波形数据，避免由于网络波动等原因导致 清空队列指令晚于波形数据执行造成波形数据丢失 的情况
+#### 强度回传
 
-#### APP 反馈
+APP 通道强度或上限变化时，自动上报当前状态。服务端会将该消息**转发给前端**。
 
-APP 中有多个不同形状的图标按钮，点击可以上发当前按下按钮的指令，第三方终端可以拟定不同形状图标代表的感受状态。
+`message`: `strength-A强度+B强度+A上限+B上限`
 
-APP 向上发送强度数据: {"type":"msg","clientId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","targetId":"xxxx-xxxxxxxxx-xxxxx-xxxxx-xx","message":"feedback-x"}
+```json
+{ "type": "msg", "clientId": "xxx", "targetId": "xxx", "message": "strength-11+7+100+35" }
+```
 
-SOCKET 根据对应的 ID 将 json 转发给第三方终端，终端收到 type = msg，message = feedback-x 的数据时，更新 UI(显示 APP 用户的反馈)
+解释：A 通道强度=11，B 通道强度=7，A 通道上限=100，B 通道上限=35（值范围 0 ~ 200）
 
-指令解释:
+#### APP 反馈按钮
 
-1. feedback-index
-2. index: A 通道 5 个按钮(从左至右)的角标为:0,1,2,3,4;B 通道 5 个按钮(从左至右)的角标为:5,6,7,8,9
+APP 用户点击反馈图标时上报。服务端将该消息**转发给前端**。
 
-- Tips 您可以在自己开发的终端自由拟定每个形状代表了 APP 用户的某种反馈
+`message`: `feedback-角标`
 
-#### 前端协议(重要)
+| 角标 | 位置            |
+| ---- | --------------- |
+| 0~4  | A 通道 5 个按钮 |
+| 5~9  | B 通道 5 个按钮 |
 
-如果您希望自己开发前端但完全使用我们的后端代码，那么您的前端协议与以上内容有所不同。
+---
 
-<b>请注意：前端协议的消息不能直接发送到 app，会导致无法解析。App 实际收到的消息请看前半部分 APP 收信协议内容解释</b>
+### 服务端 → 前端 控制消息
 
-1. 强度操作：
+#### 绑定消息 (type: "bind")
 
-   type : 1 -> 通道强度减少; 2 -> 通道强度增加; 3 -> 通道强度归零 ;4 -> 通道强度指定为某个值
+```json
+// 初次连接 - 分配 clientId（targetId 为空）
+{ "type": "bind", "clientId": "uuid-v4", "targetId": "", "message": "targetId" }
 
-   strength: 强度值变化量/指定强度值(当 type 为 1 或 2 时，该值会被强制设置为 1)
+// 配对成功
+{ "type": "bind", "clientId": "xxx", "targetId": "xxx", "message": "200" }
 
-   message: 'set channel' 固定不变
+// 配对失败
+{ "type": "bind", "clientId": "xxx", "targetId": "xxx", "message": "400" }
+```
 
-   channel: 1 -> A 通道; 2 -> B 通道
+#### 断开通知 (type: "break")
 
-   clientId: 终端 ID
+```json
+{ "type": "break", "clientId": "xxx", "targetId": "xxx", "message": "209" }
+```
 
-   targetId: APP ID
+#### 错误消息 (type: "error")
 
-   A 通道强度减 5 : { type : 1,strength: 5,message : 'set channel',channel:1,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+```json
+{ "type": "error", "clientId": "xxx", "targetId": "xxx", "message": "402" }
+```
 
-   B 通道强度加 1 : { type : 2,strength: 1,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+#### 心跳包 (type: "heartbeat")
 
-   B 通道强度变 0 : { type : 3,strength: 0,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+```json
+{ "type": "heartbeat", "clientId": "xxx", "targetId": "xxx", "message": "200" }
+```
 
-   B 通道强度变 10 : { type : 4,strength: 10,message : 'set channel',channel:2,clientId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx,targetId:xxxx-xxxxxxxxx-xxxxx-xxxxx-xx }
+默认每 60 秒发送一次，可通过 `HEARTBEAT_INTERVAL` 环境变量配置。
 
-2. 波形数据:
+---
 
-   后端代码中默认波形数据发送间隔为 200ms，您可以根据您的波形数据来调整后端的波形数据发送间隔(修改后端代码 timeSpace 的变量值)
+### 终端二维码协议
 
-   type : clientMsg 固定不变
+第三方终端的二维码必须按照以下格式生成，否则 APP 无法识别：
 
-   message : A 通道波形数据(16 进制 HEX 数组 json,具体见上面的协议说明)
+```
+https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#ws://你的服务器地址:端口/终端ID
+```
 
-   message2 : B 通道波形数据(16 进制 HEX 数组 json,具体见上面的协议说明)
+规则：
+1. 必须包含 APP 官网下载地址: `https://www.dungeon-lab.com/app-download.php`
+2. 必须包含标签: `DGLAB-SOCKET`
+3. 必须包含 SOCKET 服务地址 + 终端 ID，中间不得有额外路径
+4. 有且仅有 **两个 `#`** 分隔以上三部分
+5. 不可包含其他多余内容
 
-   time1 : A 通道波形数据持续发送时长
+✅ 正确: `https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#wss://ws.example.com/xxxx-xxxx-xxxx`
 
-   time2 : B 通道波形数据持续发送时长
+❌ 错误: `https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#wss://ws.example.com/path/xxxx-xxxx-xxxx`
 
-   clientId: 终端 ID
+---
 
-   targetId: APP ID
+### 错误码
 
-3. 清空波形队列:
+| 错误码 | 说明                             |
+| ------ | -------------------------------- |
+| 200    | 成功                             |
+| 209    | 对方客户端已断开                 |
+| 210    | 二维码中没有有效的 clientID      |
+| 211    | 连接成功但服务器未下发 APP 端 ID |
+| 400    | 此 ID 已被其他客户端绑定         |
+| 401    | 要绑定的目标客户端不存在         |
+| 402    | 收信方和寄信方不是绑定关系       |
+| 403    | 发送的内容不是标准 JSON 对象     |
+| 404    | 未找到收信人（离线）             |
+| 405    | 下发的 message 长度大于 1950     |
+| 406    | 缺少 channel 字段                |
+| 500    | 服务器内部异常                   |
 
-   type : msg 固定不变
+---
 
-   message: clear-1 -> 清除 A 通道波形队列; clear-2 -> 清除 B 通道波形队列
+### 相关资源
 
-   clientId: 终端 ID
+- [快速体验指南](Quick%20Experience%20Guide.md)
+- [常见问题 (中文)](QA/Websocket_open_source_QA_Chinese.txt)
+- [常见问题 (English)](QA/Websocket_open_source_QA_English.txt)
+- [郊狼 V3 蓝牙协议](../coyote/v3/README_V3.md)
+- [波形数据简易说明](DG_WAVES_V2_V3_simple.js)
 
-   targetId: APP ID
-
-#### 终端二维码
-
-第三方终端的二维码必须按照协议指定方式来生成，否则 APP 将无法识别该二维码
-
-第三方终端需要先连接 SOCKET 服务，并收到服务返回的终端 ID，并存储。
-
-二维码内容为: https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#xxxxxxxxx
-
-内容解释:
-
-1. 二维码必须包含我们的 APP 官网下载地址: https://www.dungeon-lab.com/app-download.php
-2. 二维码必须包含标签: DGLAB-SOCKET
-3. 二维码必须包含 SOCKET 服务地址,且含有终端 ID 信息,且服务地址与 ID 信息之间不得再有其他内容
-
-   举例：
-
-   1. 正确 -> wss://ws.dungeon-lab.cn/xxxx-xxxxxxxxx-xxxxx-xxxxx-xx
-   2. 错误 -> wss://ws.dungeon-lab.cn/xxxx/xxxx-xxxxxxxxx-xxxxx-xxxxx-xx
-
-4. 二维码有且仅有两个#来分割 1.2.3.提到的内容，否则 APP 将无法识别内容
-5. 二维码除以上描述的必须包含的内容外，不可再涉及其他内容，否则 APP 可能无法识别
-
-#### 错误码
-
-200 - 成功
-
-209 - 对方客户端已断开
-
-210 - 二维码中没有有效的 clientID
-
-211 - socket 连接上了，但服务器迟迟不下发 app 端的 id 来绑定
-
-400 - 此 id 已被其他客户端绑定关系
-
-401 - 要绑定的目标客户端不存在
-
-402 - 收信方和寄信方不是绑定关系
-
-403 - 发送的内容不是标准 json 对象
-
-404 - 未找到收信人（离线）
-
-405 - 下发的 message 长度大于 1950
-
-500 - 服务器内部异常
-
-> 如有问题，请咨询service@dungeon-lab.com 或 发起 issues
+> 如有问题，请咨询 service@dungeon-lab.com
