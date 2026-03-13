@@ -12,7 +12,7 @@ DG-LAB 设备在全球范围得到广大朋友的认可与喜爱，很多朋友�
 
 [蓝牙协议 V3](coyote/v3/README_V3.md)
 
-[SOCKET 控制协议 V3](socket/README.md)
+[SOCKET 控制协议 V2 (仅限郊狼3.0)](socket/v2/README.md)
 
 [郊狼 WEB 蓝牙直连测试](coyote/web/README.md)
 
@@ -23,6 +23,8 @@ DG-LAB 设备在全球范围得到广大朋友的认可与喜爱，很多朋友�
 [外部电压检测的解释与使用示例](PawPrints/extvoltageinput/README.md)
 
 ## 更新日志
+
+2026/03/13 -> 重构 WebSocket 功能及文档
 
 2025/04/23 -> 调整 V3 蓝牙协议错误修正
 
