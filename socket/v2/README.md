@@ -334,6 +334,7 @@ https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#ws://你的服务器�
 3. 必须包含 SOCKET 服务地址 + 终端 ID，中间不得有额外路径
 4. 有且仅有 **两个 `#`** 分隔以上三部分
 5. 不可包含其他多余内容
+6. 本地调试可以用ws协议，正式使用时推荐用wss更安全
 
 ✅ 正确: `https://www.dungeon-lab.com/app-download.php#DGLAB-SOCKET#wss://ws.example.com/xxxx-xxxx-xxxx`
 

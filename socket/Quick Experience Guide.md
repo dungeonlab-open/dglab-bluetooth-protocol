@@ -21,9 +21,9 @@ Our website serves as a test case for a small dinosaur jumping game, showcasing 
 ## FAQ
 
 1. **How can I control multiple Coyote 3.0 devices simultaneously?**  
-   To do this, you’ll need some coding skills to modify our open-source code. Please refer to the **README.md** document for more details.
+   To do this, you’ll need some coding skills to modify our open-source code. Please refer to the [v2/README.md](v2/README.md) document for more details.
 2. **How can I enable other games to control the Coyote 3.0?**  
-   For this, please also check the **README.md** document for guidance.
+   For this, please also check the [v2/README.md](v2/README.md) document for guidance.
 
 ---
 
