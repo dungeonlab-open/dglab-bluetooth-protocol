@@ -4,7 +4,7 @@ module.exports = {
   // 服务器配置
   server: {
     port: parseInt(process.env.PORT) || 9999,
-    heartbeatInterval: parseInt(process.env.HEARTBEAT_INTERVAL) || 60000,
+    heartbeatInterval: parseInt(process.env.HEARTBEAT_INTERVAL) || 30000,
   },
 
   // 消息配置
