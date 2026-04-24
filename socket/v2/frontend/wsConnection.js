@@ -54,8 +54,8 @@ const waveData = {
  */
 
 function connectWs() {
-    //wsConn = new WebSocket("ws://12.34.56.78:9999/");
-    wsConn = new WebSocket("ws://10.31.1.183:9999/");
+    //wsConn = new WebSocket("ws://12.34.56.78:9999/"); 改成你自己的websocket服务器地址
+    wsConn = new WebSocket("wss://ws.dungeon-lab.cn/");
     wsConn.onopen = function (event) {
         console.log("WebSocket连接已建立");
     };
