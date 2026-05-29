@@ -20,6 +20,8 @@ DG-LAB 设备在全球范围得到广大朋友的认可与喜爱，很多朋友�
 
 ## 爪印无线按钮传感器
 
+[爪印无线按钮蓝牙协议说明](PawPrints/bluetooth/README.md)
+
 [外部电压检测的解释与使用示例](PawPrints/extvoltageinput/README.md)
 
 ## 更新日志
