@@ -1,28 +1,26 @@
 # DG-LAB 开源
 
-DG-LAB 设备在全球范围得到广大朋友的认可与喜爱，很多朋友们希望我们的设备可以参与到更多的场景中去。为此我们将 DG-LAB 具有代表性的设备蓝牙协议以开源的形式分享出来，您可以通过无数种其他编程的方式将 DG-LAB 设备参与到您自己的娱乐场景中去。
+**DG-LAB** 设备在全球范围内得到了广大朋友的认可与喜爱。许多朋友希望我们的设备能够参与到更多有趣、自由、多样化的场景中。
 
-> 开源蓝牙协议旨在让 DG-LAB 爱好者更加自由的使用设备，未经授权请勿将本内容用以任何商业用途,如有需要,请[联系我们](https://www.dungeon-lab.com)
+因此，我们将 DG-LAB 具有代表性的设备蓝牙协议以开源形式分享出来。您可以基于该协议，使用不同的编程语言、开发框架或创意方案，将 DG-LAB 设备接入到自己的娱乐场景中。
 
-![郊狼电击器LOGO](image/DG-LAB_492.png)
+> 本开源蓝牙协议旨在让 DG-LAB 爱好者更加自由地使用设备。未经授权，请勿将本内容用于任何商业用途。如有商业合作需求，请 [联系我们](https://www.dungeon-lab.com)。技术咨询 QQ：[3849540080](tencent://message/?site=qq&menu=yes&uin=3849540080)（**仅供开源技术相关问题咨询**）
 
 ## 郊狼情趣脉冲主机
 
-[蓝牙协议 V2](coyote/v2/README_V2.md)
+[蓝牙协议 V2](coyote/v2/README.md)
 
-[蓝牙协议 V3](coyote/v3/README_V3.md)
+[蓝牙协议 V3](coyote/v3/README.md)
 
-[SOCKET 控制协议 V2 (仅限郊狼3.0)](socket/v2/README.md)
-
-[郊狼 WEB 蓝牙直连测试](coyote/web/README.md)
-
-[脉冲波形解释](coyote/extra/README.md)
+[脉冲波形解释](coyote/README.md)
 
 ## 爪印无线按钮传感器
 
-[外部电压检测的解释与使用示例](PawPrints/extvoltageinput/README.md)
+[外部电压检测的解释与使用示例](paw-prints/extvoltageinput/README.md)
 
 ## 更新日志
+
+2026/06/02 -> 优化文档、重新组织仓库
 
 2026/03/13 -> 重构 WebSocket 功能及文档
 
@@ -43,7 +41,3 @@ DG-LAB 设备在全球范围得到广大朋友的认可与喜爱，很多朋友�
 2024/01/11 -> 更新 V3 版本的通道强度和波形输出相关协议
 
 V3 配件玩法相关内容以及开源形式正在修订中
-
-技术咨询 QQ：3849540080（仅供开源技术相关问题咨询）
-
-![客服qq二维码](image/qq-3849.png)
