@@ -18,7 +18,13 @@
 
 [外部电压检测的解释与使用示例](paw-prints/extvoltageinput/README.md)
 
+## 灵猫边缘控制传感器
+
+[蓝牙协议 V1](civet-edging-sensor/README.md)
+
 ## 更新日志
+
+2026/06/04 -> 新增灵猫边缘控制传感器蓝牙协议
 
 2026/06/02 -> 优化文档、重新组织仓库
 
