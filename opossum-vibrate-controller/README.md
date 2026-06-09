@@ -82,7 +82,7 @@ B3 指令写入通道强度（3bytes）。两通道数据都在同一条指令�
 负鼠上报的 控制器物理按键的 按下 / 抬起 状态信息集（16bytes），当物理按键 按下 / 抬起时，主动上报
 
 ```
-0xD0 (1byte 消息 HEAD) + xx (1byte 报文序号) xxxx (2bytes 按钮状态集) + xxxxxxxxxxxxxxxxxxxxxxxx (12bytes 其他信息)
+0xD0 (1byte 消息 HEAD) + xx (1byte 报文序号)+ xxxx (2bytes 按钮状态集) + xxxxxxxxxxxxxxxxxxxxxxxx (12bytes 其他信息)
 ```
 
 ##### 报文序号
