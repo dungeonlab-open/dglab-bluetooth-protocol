@@ -22,7 +22,13 @@
 
 [蓝牙协议 V1](civet-edging-sensor/README.md)
 
+## 负鼠振动控制器
+
+[蓝牙协议 V1](opossum-vibrate-controller/README.md)
+
 ## 更新日志
+
+2026/06/09 -> 新增负鼠振动控制器蓝牙协议
 
 2026/06/04 -> 新增灵猫边缘控制传感器蓝牙协议
 
