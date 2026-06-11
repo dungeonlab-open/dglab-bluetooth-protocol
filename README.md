@@ -16,6 +16,8 @@
 
 ## 爪印无线按钮传感器
 
+[蓝牙协议 V1.1](paw-prints/README.md)
+
 [外部电压检测的解释与使用示例](paw-prints/extvoltageinput/README.md)
 
 ## 灵猫边缘控制传感器
@@ -27,6 +29,8 @@
 [蓝牙协议 V1](opossum-vibrate-controller/README.md)
 
 ## 更新日志
+
+2026/06/11 -> 新增爪印无线按钮传感器 V1.1 蓝牙协议
 
 2026/06/09 -> 新增负鼠振动控制器蓝牙协议
 
