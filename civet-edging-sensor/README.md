@@ -39,7 +39,7 @@
 ```
 1byte 指示灯颜色（例如01为黄色）
      ↓↓
-0xD0 xx xx xx xx xx xx xx xx xx xx xx xx xx xx
+0xD0 xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx xx
   ↑↑                      ↑↑↑↑
 1byte 消息 HEAD        2bytes 气压值（第8、9字节）
 ```
