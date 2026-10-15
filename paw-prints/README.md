@@ -100,10 +100,10 @@ xx (1byte 触发模式) + xxxxxxxxxxxxxxxxxxxxxxxxxxxx (14bytes 触发设置)
 xx (1byte 触发事件 ID) + 
 xxxxxxxx (4bytes 绿灯亮起随机时间范围) + 
 xxxx (2bytes 反应时间) + 
-xx (1byte 触发时参数增加值) + 
 xx (1byte 触发期间参数增加速度) + 
 xx (1byte 取消触发时参数下降值) + 
 xx (1byte 取消触发后参数持续下降速度) + 
+xx (1byte 触发时参数增加值) + 
 000000 (3bytes 00 占位)
 ```
 
