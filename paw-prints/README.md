@@ -4,10 +4,10 @@
 
 ## Bluetooth Characteristics
 
-| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
-| --- | --- | --- | --- | --- | --- |
-| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
-| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
+| Service UUID | Characteristic UUID | Properties | Name   | Size           | Description                             |
+|--------------|---------------------|------------|--------|----------------|-----------------------------------------|
+| 0x180C       | 0x150A              | Write      | WRITE  | Up to 20 bytes | All commands are written here           |
+| 0x180C       | 0x150B              | Notify     | NOTIFY | Up to 20 bytes | All response messages are returned here |
 
 > Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
@@ -16,7 +16,7 @@
 Pawprint Wireless Button Sensor V1.1: `47L120300`
 
 > 1. After powering on the device, press and hold the button. The device becomes discoverable when its three shoulder lights alternate between white and blue.
-> 2. A device named `47L120100` is a V1.0 unit. In the DG-LAB 3.0 app, go to **Settings -> Update Accessory Firmware** and follow the instructions to update it to V1.1.
+> 2. A device named `47L120100` is a V1.0 unit. In the DG-LAB 3.0 app, go to **Settings → Update Accessory Firmware** and follow the instructions to update it to V1.1.
 
 ## Bluetooth Commands
 
@@ -38,13 +38,13 @@ The 50 command sets the main indicator color and interaction trigger mode, or en
 xx (1-byte trigger mode) + xxxxxxxxxxxxxxxxxxxxxxxxxxxx (14-byte trigger settings)
 ```
 
-| Trigger mode | Description |
-| --- | --- |
-| 0x00 | No trigger |
-| 0x03 | Random reaction trigger |
-| 0x04 | Probability trigger |
-| 0x0F | External voltage detection trigger |
-| 0x05 | Press/release trigger and acceleration/angle trigger |
+| Trigger mode | Description                                          |
+|--------------|------------------------------------------------------|
+| 0x00         | No trigger                                           |
+| 0x03         | Random reaction trigger                              |
+| 0x04         | Probability trigger                                  |
+| 0x0F         | External voltage detection trigger                   |
+| 0x05         | Press/release trigger and acceleration/angle trigger |
 
 #### No-Trigger Mode
 
@@ -80,15 +80,15 @@ xx (1-byte parameter increase on activation) +
 000000 (3 bytes of 00 padding)
 ```
 
-| Field | Size | Range | Description |
-| --- | --- | --- | --- |
-| Trigger event ID | 1 byte | 1–24 | Included in the event report if the button is not pressed within the reaction time. |
-| Random green-light delay | 4 bytes | 1–65535 | Two 2-byte bounds define the random delay range, in seconds, before the shoulder lights turn green. |
-| Reaction time | 2 bytes | 1–65535 | Time in seconds to press the button after the lights turn green. Pawprint reports a trigger event if this expires. |
-| Parameter increase on activation | 1 byte | 0–255 | Immediately adds this amount to the parameter and includes the updated value in the activation report. |
-| Parameter increase rate while active | 1 byte | 0–120 | Encodes the time to increase from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
-| Parameter decrease on deactivation | 1 byte | 0–255 | Immediately subtracts this amount when the trigger clears and reports the updated parameter. |
-| Continuous parameter decrease rate after deactivation | 1 byte | 0–120 | Encodes the time to decrease from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
+| Field                                                 | Size    | Range   | Description                                                                                                                                                                                                                              |
+|-------------------------------------------------------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Trigger event ID                                      | 1 byte  | 1–24    | Included in the event report if the button is not pressed within the reaction time.                                                                                                                                                      |
+| Random green-light delay                              | 4 bytes | 1–65535 | Two 2-byte bounds define the random delay range, in seconds, before the shoulder lights turn green.                                                                                                                                      |
+| Reaction time                                         | 2 bytes | 1–65535 | Time in seconds to press the button after the lights turn green. Pawprint reports a trigger event if this expires.                                                                                                                       |
+| Parameter increase on activation                      | 1 byte  | 0–255   | Immediately adds this amount to the parameter and includes the updated value in the activation report.                                                                                                                                   |
+| Parameter increase rate while active                  | 1 byte  | 0–120   | Encodes the time to increase from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
+| Parameter decrease on deactivation                    | 1 byte  | 0–255   | Immediately subtracts this amount when the trigger clears and reports the updated parameter.                                                                                                                                             |
+| Continuous parameter decrease rate after deactivation | 1 byte  | 0–120   | Encodes the time to decrease from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
 
 ```TypeScript
 // Random reaction trigger: event ID = 7; green-light delay = 30–50 seconds;
@@ -115,11 +115,11 @@ xx (1-byte event x6 ID) + xx (1-byte x6 probability) +
 xxxx (2-byte cooldown)
 ```
 
-| Field | Size | Range | Description |
-| --- | --- | --- | --- |
-| Event ID | 1 byte | 1–24 | Up to six distinct IDs. Fill unused slots with 0x00. When a press triggers an event, Pawprint reports its ID. |
-| Trigger probability | 1 byte | Sum of all six values ≤200 | Values 0–200 map to 0–100%, in 0.5% increments. A probability is ignored if its event ID is invalid; unused slots need no probability setting. If the total exceeds 200, Pawprint removes the excess starting at x6, then x5, and so on until the total is ≤200. |
-| Cooldown | 2 bytes | 0–65535 | Duration in seconds after every trigger attempt, including attempts that produce no event. Presses cannot trigger another attempt during cooldown. The shoulder lights remain white until cooldown ends, then turn off. |
+| Field               | Size    | Range                      | Description                                                                                                                                                                                                                                                      |
+|---------------------|---------|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Event ID            | 1 byte  | 1–24                       | Up to six distinct IDs. Fill unused slots with 0x00. When a press triggers an event, Pawprint reports its ID.                                                                                                                                                    |
+| Trigger probability | 1 byte  | Sum of all six values ≤200 | Values 0–200 map to 0–100%, in 0.5% increments. A probability is ignored if its event ID is invalid; unused slots need no probability setting. If the total exceeds 200, Pawprint removes the excess starting at x6, then x5, and so on until the total is ≤200. |
+| Cooldown            | 2 bytes | 0–65535                    | Duration in seconds after every trigger attempt, including attempts that produce no event. Presses cannot trigger another attempt during cooldown. The shoulder lights remain white until cooldown ends, then turn off.                                          |
 
 ```TypeScript
 // Event 5: 60 (30%); event 2: 80 (40%); cooldown: 600 seconds.
@@ -153,12 +153,12 @@ xx (1-byte parameter mapping range) +
 000000000000000000 (9 bytes of 00 padding)
 ```
 
-| Field | Size | Range | Description |
-| --- | --- | --- | --- |
-| Trigger event ID | 1 byte | 1–24 | Included in the event report when the voltage is outside the target range. |
-| Internal pull-up | 1 byte | 0–1 | 0: high level; 1: high impedance. High level enables an internal 3.3 V pull-up through a 10 kΩ resistor, with a 4.8 kΩ resistor to ground. With no external resistor, the input is approximately 1.07 V. Connect a variable resistor between the detection pin and ground to detect resistance changes. |
-| Target voltage range | 2 bytes | 0–255 | Lower and upper bounds, one byte each. Values 0–255 map to 0.00–2.10 V. Voltage = `input <= 232 ? Round(232 / 8) * 0.07 V : 2.1 V`. |
-| Parameter mapping range | 1 byte | 0–255 | Values 0–255 map to 0.00–2.10 V. For a target range of 0.49–1.47 V and a mapping range of 0.49 V, the parameter is 0 at the upper bound (1.47 V), reaching its maximum at ≥1.96 V (1.47 + 0.49 V). The same applies below the lower bound (0.49 V). For voltages X closer than 0.49 V to either bound (0 < X < 0.49 or 1.47 < X < 1.96), the parameter maps linearly to 0–2.1. Formula: parameter = (X − parameter mapping range value) / 0.49 * 2.1. |
+| Field                   | Size    | Range | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|-------------------------|---------|-------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Trigger event ID        | 1 byte  | 1–24  | Included in the event report when the voltage is outside the target range.                                                                                                                                                                                                                                                                                                                                                                            |
+| Internal pull-up        | 1 byte  | 0–1   | 0: high level; 1: high impedance. High level enables an internal 3.3 V pull-up through a 10 kΩ resistor, with a 4.8 kΩ resistor to ground. With no external resistor, the input is approximately 1.07 V. Connect a variable resistor between the detection pin and ground to detect resistance changes.                                                                                                                                               |
+| Target voltage range    | 2 bytes | 0–255 | Lower and upper bounds, one byte each. Values 0–255 map to 0.00–2.10 V. Voltage = `input <= 232 ? Round(input / 8) * 0.07 V : 2.1 V`.                                                                                                                                                                                                                                                                                                                 |
+| Parameter mapping range | 1 byte  | 0–255 | Values 0–255 map to 0.00–2.10 V. For a target range of 0.49–1.47 V and a mapping range of 0.49 V, the parameter is 0 at the upper bound (1.47 V), reaching its maximum at ≥1.96 V (1.47 + 0.49 V). The same applies below the lower bound (0.49 V). For voltages X closer than 0.49 V to either bound (0 < X < 0.49 or 1.47 < X < 1.96), the parameter maps linearly to 0–2.1. Formula: parameter = (X − parameter mapping range value) / 0.49 * 2.1. |
 
 ```TypeScript
 // External voltage trigger: event ID = 7; high-level mode;
@@ -194,21 +194,21 @@ xxxxxxxxxxxx (6-byte acceleration threshold settings or XYZ angle threshold rang
 xx (1-byte acceleration/angle parameter mapping range)
 ```
 
-| Field | Size | Range | Description |
-| --- | --- | --- | --- |
-| Press/release event ID | 1 byte | 1–24 | A valid ID enables press/release detection. Included in the activation report. |
-| Packed settings: press/release mode (highest bit) | 1 bit | 0–1 | 0b0: trigger on press; 0b1: trigger on release. |
-| Packed settings: acceleration/angle submode | 1 bit | 0–1 | 0b0: acceleration; 0b1: angle. |
-| Packed settings: activation debounce | 3 bits | 0–7 | Values 0–7 map to 0–0.7 seconds. The reading must remain outside the threshold range for this long before activation is reported. |
-| Packed settings: deactivation debounce (lowest bits) | 3 bits | 0–7 | Values 0–7 map to 0–0.7 seconds. The reading must remain inside the threshold range for this long before deactivation is reported. |
-| Press/release parameter increase rate while active | 1 byte | 0–120 | Time to rise from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s). |
-| Press/release parameter decrease on deactivation | 1 byte | 0–255 | Immediately subtracts this amount when the trigger clears and reports the updated parameter. |
-| Press/release parameter decrease rate after deactivation | 1 byte | 0–120 | Time to fall from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s). |
-| Press/release parameter increase on activation | 1 byte | 0–255 | Immediately adds this amount on activation and includes the updated value in the report. |
-| Acceleration/angle event ID | 1 byte | 1–24 | A valid ID enables acceleration/angle detection. Included in the activation report. |
-| Acceleration threshold settings | 6 bytes | Acceleration submode | 1-byte detection mode: 0x00 triggers below the threshold; 0x01 triggers above it. Next: a 2-byte threshold, range 0–400. Detection applies to overall motion, without a specified direction. Final 3 bytes: 0x00 padding. |
-| XYZ angle threshold ranges | 6 bytes | Angle submode | Two bytes per axis, in X, Y, Z order: 1-byte lower bound and 1-byte upper bound, each in −128–127. See the rules below. |
-| Acceleration/angle parameter mapping range | 1 byte | 0–255 | For example, with activation above an acceleration threshold of 10 and a mapping range of 20, the parameter is 0 at 10, 255 at ≥30, and `(X-10) / 20 * 255` for 10 < X < 30. |
+| Field                                                    | Size    | Range                | Description                                                                                                                                                                                                               |
+|----------------------------------------------------------|---------|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Press/release event ID                                   | 1 byte  | 1–24                 | A valid ID enables press/release detection. Included in the activation report.                                                                                                                                            |
+| Packed settings: press/release mode (highest bit)        | 1 bit   | 0–1                  | 0b0: trigger on press; 0b1: trigger on release.                                                                                                                                                                           |
+| Packed settings: acceleration/angle submode              | 1 bit   | 0–1                  | 0b0: acceleration; 0b1: angle.                                                                                                                                                                                            |
+| Packed settings: activation debounce                     | 3 bits  | 0–7                  | Values 0–7 map to 0–0.7 seconds. The reading must remain outside the threshold range for this long before activation is reported.                                                                                         |
+| Packed settings: deactivation debounce (lowest bits)     | 3 bits  | 0–7                  | Values 0–7 map to 0–0.7 seconds. The reading must remain inside the threshold range for this long before deactivation is reported.                                                                                        |
+| Press/release parameter increase rate while active       | 1 byte  | 0–120                | Time to rise from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s).                   |
+| Press/release parameter decrease on deactivation         | 1 byte  | 0–255                | Immediately subtracts this amount when the trigger clears and reports the updated parameter.                                                                                                                              |
+| Press/release parameter decrease rate after deactivation | 1 byte  | 0–120                | Time to fall from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s).                   |
+| Press/release parameter increase on activation           | 1 byte  | 0–255                | Immediately adds this amount on activation and includes the updated value in the report.                                                                                                                                  |
+| Acceleration/angle event ID                              | 1 byte  | 1–24                 | A valid ID enables acceleration/angle detection. Included in the activation report.                                                                                                                                       |
+| Acceleration threshold settings                          | 6 bytes | Acceleration submode | 1-byte detection mode: 0x00 triggers below the threshold; 0x01 triggers above it. Next: a 2-byte threshold, range 0–400. Detection applies to overall motion, without a specified direction. Final 3 bytes: 0x00 padding. |
+| XYZ angle threshold ranges                               | 6 bytes | Angle submode        | Two bytes per axis, in X, Y, Z order: 1-byte lower bound and 1-byte upper bound, each in −128–127. See the rules below.                                                                                                   |
+| Acceleration/angle parameter mapping range               | 1 byte  | 0–255                | For example, with activation above an acceleration threshold of 10 and a mapping range of 20, the parameter is 0 at 10, 255 at ≥30, and `(X-10) / 20 * 255` for 10 < X < 30.                                              |
 
 Angle threshold rules, applied independently to each axis:
 
@@ -247,7 +247,7 @@ The following mode automatically reports sensor data every 100 ms.
 
 ##### D0 Mode
 
-Reports the main indicator color, button press/release state, acceleration, X/Y/Z angles, and external voltage every 100 ms. Use these readings to implement your own trigger logic.
+Reports the main indicator color, button press/release state, acceleration, X/Y/Z angles, and external voltage every 100 Ms. Use these readings to implement your own trigger logic.
 
 **Mode settings**
 
@@ -364,13 +364,13 @@ In addition to an active/inactive state, a trigger has a **parameter** ranging f
 
 This parameter represents the degree of activation. For example, a press trigger can increase the parameter with each press, or a motion trigger can increase it as acceleration moves farther beyond its threshold.
 
-In the app's accessory interactions, **Temporary Intensity Change -> By Param** maps this parameter linearly to the configured intensity range. For a range from A to B, parameter 0 gives A, parameter 255 gives B, and parameter 100 gives `A + (B - A) / 255 * 100`. If several conditions for the same trigger result are active at once, the largest parameter value is used. The trigger settings determine how parameters change during activation and deactivation.
+In the app's accessory interactions, **Temporary Intensity Change → By Param** maps this parameter linearly to the configured intensity range. For a range from A to B, parameter 0 gives A, parameter 255 gives B, and parameter 100 gives `A + (B - A) / 255 * 100`. If several conditions for the same trigger result are active at once, the largest parameter value is used. The trigger settings determine how parameters change during activation and deactivation.
 
 ### Indicator and Shoulder-Light Colors
 
 1. Main indicator color range: `0x01`–`0x06`.
 2. Shoulder-light color range: `0x00`–`0x07`.
 
-| Value | 0x00 | 0x01 | 0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Color | Off | Yellow | Red | Purple | Blue | Cyan | Green | White |
+| Value | 0x00 | 0x01   | 0x02 | 0x03   | 0x04 | 0x05 | 0x06  | 0x07  |
+|-------|------|--------|------|--------|------|------|-------|-------|
+| Color | Off  | Yellow | Red  | Purple | Blue | Cyan | Green | White |

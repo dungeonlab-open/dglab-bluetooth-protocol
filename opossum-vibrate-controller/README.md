@@ -4,11 +4,11 @@
 
 ## Bluetooth Characteristics
 
-| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
-| --- | --- | --- | --- | --- | --- |
-| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
-| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
-| 0x180A | 0x1500 | Read / Notify | READ/NOTIFY | 1 byte | Battery level |
+| Service UUID | Characteristic UUID | Properties    | Name        | Size           | Description                             |
+|--------------|---------------------|---------------|-------------|----------------|-----------------------------------------|
+| 0x180C       | 0x150A              | Write         | WRITE       | Up to 20 bytes | All commands are written here           |
+| 0x180C       | 0x150B              | Notify        | NOTIFY      | Up to 20 bytes | All response messages are returned here |
+| 0x180A       | 0x1500              | Read / Notify | READ/NOTIFY | 1 byte         | Battery level                           |
 
 > Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
@@ -102,8 +102,8 @@ Increments with each report, wrapping from 255 to 0 (`0x00`–`0xFF`).
 
 `0b0` means released / not pressed; `0b1` means pressed.
 
-| Bit offset | +0 | +1 | +2 | +8 | +9 | +10 | +11 | +12 | +13 | +14 | +15 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Physical button | SEL_1 | SEL_2 | HOME | Up | Down | Left | Right | B | A | G | D |
+| Bit offset      | +0    | +1    | +2   | +8 | +9   | +10  | +11   | +12 | +13 | +14 | +15 |
+|-----------------|-------|-------|------|----|------|------|-------|-----|-----|-----|-----|
+| Physical button | SEL_1 | SEL_2 | HOME | Up | Down | Left | Right | B   | A   | G   | D   |
 
 ![Opossum physical button layout](images/img1.webp)

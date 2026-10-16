@@ -15,14 +15,14 @@ The **Pulse frequency** field represents the duration of one output unit, consis
 For example, a 1 Hz output corresponds to a Pulse frequency value of 1,000 ms; a 50 Hz output corresponds to 20 ms.
 
 | Electrical pulse frequency | Pulse frequency value |
-|:---:|:---:|
-| 1 Hz | 1000 ms |
-| 5 Hz | 200 ms |
-| 10 Hz | 100 ms |
-| 50 Hz | 20 ms |
-| 100 Hz | 10 ms |
-| 500 Hz | 2 ms |
-| 1000 Hz | 1 ms |
+|:--------------------------:|:---------------------:|
+|            1 Hz            |        1000 ms        |
+|            5 Hz            |        200 ms         |
+|           10 Hz            |        100 ms         |
+|           50 Hz            |         20 ms         |
+|           100 Hz           |         10 ms         |
+|           500 Hz           |         2 ms          |
+|          1000 Hz           |         1 ms          |
 
 In the Coyote V2 protocol, [X and Y](/coyote/v2/README.md) together determine the Pulse frequency. X specifies X consecutive pulses over X milliseconds. After those pulses, the device waits Y milliseconds before repeating.
 
@@ -48,16 +48,16 @@ V3 also compresses the Pulse frequency value before transmission. To create a li
 Small frequency changes are difficult to perceive. As the output unit gets longer, a given change in its duration produces a smaller change in the electrical pulse frequency. This conversion also reduces the amount of data needed for transmission.
 
 | Pulse frequency value | Transmitted value | Electrical pulse frequency |
-|:---:|:---:|:---:|
-| 10 ms | 10 | 100 Hz |
-| 20 ms | 20 | 50 Hz |
-| 50 ms | 50 | 20 Hz |
-| 100 ms | 100 | 10 Hz |
-| 110 ms | 102 | 9 Hz |
-| 150 ms | 110 | 6.6 Hz |
-| 650 ms | 205 | 1.53 Hz |
-| 680 ms | 208 | 1.47 Hz |
-| 750 ms | 215 | 1.33 Hz |
+|:---------------------:|:-----------------:|:--------------------------:|
+|         10 ms         |        10         |           100 Hz           |
+|         20 ms         |        20         |           50 Hz            |
+|         50 ms         |        50         |           20 Hz            |
+|        100 ms         |        100        |           10 Hz            |
+|        110 ms         |        102        |            9 Hz            |
+|        150 ms         |        110        |           6.6 Hz           |
+|        650 ms         |        205        |          1.53 Hz           |
+|        680 ms         |        208        |          1.47 Hz           |
+|        750 ms         |        215        |          1.33 Hz           |
 
 #### Pulse Intensity
 

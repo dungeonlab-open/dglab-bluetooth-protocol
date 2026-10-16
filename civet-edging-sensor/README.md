@@ -4,11 +4,11 @@
 
 ### Bluetooth Characteristics
 
-| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
-| --- | --- | --- | --- | --- | --- |
-| 0x180C | 0x150A | Write | WRITE | Up to 24 bytes | All commands are written here |
-| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
-| 0x180A | 0x1500 | Read / Notify | READ/NOTIFY | 1 byte | Battery level |
+| Service UUID | Characteristic UUID | Properties    | Name        | Size           | Description                             |
+|--------------|---------------------|---------------|-------------|----------------|-----------------------------------------|
+| 0x180C       | 0x150A              | Write         | WRITE       | Up to 24 bytes | All commands are written here           |
+| 0x180C       | 0x150B              | Notify        | NOTIFY      | Up to 20 bytes | All response messages are returned here |
+| 0x180A       | 0x1500              | Read / Notify | READ/NOTIFY | 1 byte         | Battery level                           |
 
 > Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 

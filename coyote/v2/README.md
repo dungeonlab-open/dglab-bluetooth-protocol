@@ -2,19 +2,19 @@
 
 [简体中文](README_CN.md)
 
-| Service UUID | Characteristic UUID | Properties | Name | Size |
-|:---:|:---:|:---:|:---:|:---:|
-| 0x180A | 0x1500 | Read / Notify | Battery_Level | 1 byte |
-| 0x180B | 0x1504 | Read / Write / Notify | PWM_AB2 | 3 bytes |
-| 0x180B | 0x1505 | Read / Write | PWM_A34 | 3 bytes |
-| 0x180B | 0x1506 | Read / Write | PWM_B34 | 3 bytes |
+| Service UUID | Characteristic UUID |      Properties       |     Name      |  Size   |
+|:------------:|:-------------------:|:---------------------:|:-------------:|:-------:|
+|    0x180A    |       0x1500        |     Read / Notify     | Battery_Level | 1 byte  |
+|    0x180B    |       0x1504        | Read / Write / Notify |    PWM_AB2    | 3 bytes |
+|    0x180B    |       0x1505        |     Read / Write      |    PWM_A34    | 3 bytes |
+|    0x180B    |       0x1506        |     Read / Write      |    PWM_B34    | 3 bytes |
 
-| Name | Description | Data layout |
-|:---:|:---:|:---|
-| Battery_Level | Current battery level | 1 byte (integer, 0–100) |
-| PWM_AB2 | Channel A/B intensity | Bits 23–22: reserved; bits 21–11: actual channel A intensity; bits 10–0: actual channel B intensity |
-| PWM_A34 | Channel B Pulse data | Bits 23–20: reserved; bits 19–15: Az; bits 14–5: Ay; bits 4–0: Ax |
-| PWM_B34 | Channel A Pulse data | Bits 23–20: reserved; bits 19–15: Bz; bits 14–5: By; bits 4–0: Bx |
+|     Name      |      Description      | Data layout                                                                                         |
+|:-------------:|:---------------------:|:----------------------------------------------------------------------------------------------------|
+| Battery_Level | Current battery level | 1 byte (integer, 0–100)                                                                             |
+|    PWM_AB2    | Channel A/B intensity | Bits 23–22: reserved; bits 21–11: actual channel A intensity; bits 10–0: actual channel B intensity |
+|    PWM_A34    | Channel B Pulse data  | Bits 23–20: reserved; bits 19–15: Az; bits 14–5: Ay; bits 4–0: Ax                                   |
+|    PWM_B34    | Channel A Pulse data  | Bits 23–20: reserved; bits 19–15: Bz; bits 14–5: By; bits 4–0: Bx                                   |
 
 ### Bluetooth Name
 

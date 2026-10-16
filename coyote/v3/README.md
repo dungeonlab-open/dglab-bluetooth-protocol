@@ -4,11 +4,11 @@
 
 ### Bluetooth Characteristics
 
-| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
-| --- | --- | --- | --- | --- | --- |
-| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
-| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
-| 0x180A | 0x1500 | Read / Notify | READ/NOTIFY | 1 byte | Battery level |
+| Service UUID | Characteristic UUID | Properties    | Name        | Size           | Description                             |
+|--------------|---------------------|---------------|-------------|----------------|-----------------------------------------|
+| 0x180C       | 0x150A              | Write         | WRITE       | Up to 20 bytes | All commands are written here           |
+| 0x180C       | 0x150B              | Notify        | NOTIFY      | Up to 20 bytes | All response messages are returned here |
+| 0x180A       | 0x1500              | Read / Notify | READ/NOTIFY | 1 byte         | Battery level                           |
 
 > Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
@@ -28,7 +28,7 @@ Unlike V2, this protocol does not require byte-order conversion.
 
 #### B0 Command
 
-The B0 command updates channel intensity and Pulse data. Send this 20-byte command every 100 ms. Both channels are included in the same command.
+The B0 command updates channel intensity and Pulse data. Send this 20-byte command every 100 Ms. Both channels are included in the same command.
 
 ```
 0xB0 (1-byte command header) + sequence number (4 bits) + intensity interpretation mode (4 bits) + channel A intensity setting (1 byte) + channel B intensity setting (1 byte) + 4 channel A Pulse frequency values (4 bytes) + 4 channel A Pulse intensity values (4 bytes) + 4 channel B Pulse frequency values (4 bytes) + 4 channel B Pulse intensity values (4 bytes)
@@ -44,23 +44,23 @@ When changing intensity with a nonzero sequence number, wait for a B1 response w
 
 The upper two bits specify how to interpret channel A's intensity setting; the lower two bits specify the mode for channel B.
 
-| Bits | Behavior |
-| --- | --- |
-| 0b00 | Leave the channel unchanged; ignore its intensity setting. |
-| 0b01 | Increase by the setting. For example, 15 adds 15 to the current intensity. |
+| Bits | Behavior                                                                          |
+|------|-----------------------------------------------------------------------------------|
+| 0b00 | Leave the channel unchanged; ignore its intensity setting.                        |
+| 0b01 | Increase by the setting. For example, 15 adds 15 to the current intensity.        |
 | 0b10 | Decrease by the setting. For example, 17 subtracts 17 from the current intensity. |
-| 0b11 | Set an absolute intensity. For example, 32 sets the channel to 32. |
+| 0b11 | Set an absolute intensity. For example, 32 sets the channel to 32.                |
 
 Each example below starts with both channels at intensity 10:
 
-| Mode | A setting | B setting | Resulting A intensity | Resulting B intensity |
-| --- | --- | --- | --- | --- |
-| 0b0000 | 5 | 8 | 10 | 10 |
-| 0b0100 | 5 | 8 | 15 | 10 |
-| 0b0010 | 5 | 8 | 10 | 2 |
-| 0b0011 | 5 | 8 | 10 | 8 |
-| 0b0110 | 5 | 8 | 15 | 2 |
-| 0b1101 | 5 | 8 | 5 | 18 |
+| Mode   | A setting | B setting | Resulting A intensity | Resulting B intensity |
+|--------|-----------|-----------|-----------------------|-----------------------|
+| 0b0000 | 5         | 8         | 10                    | 10                    |
+| 0b0100 | 5         | 8         | 15                    | 10                    |
+| 0b0010 | 5         | 8         | 10                    | 2                     |
+| 0b0011 | 5         | 8         | 10                    | 8                     |
+| 0b0110 | 5         | 8         | 15                    | 2                     |
+| 0b1101 | 5         | 8         | 5                     | 18                    |
 
 ##### Channel Intensity Setting
 
@@ -68,18 +68,18 @@ Each setting is one byte, with a valid range of 0–200. Out-of-range settings a
 
 Each example below starts with channel A at intensity 10:
 
-| Mode | A setting | Resulting A intensity |
-| --- | --- | --- |
-| 0b0100 | 195 | 200 |
-| 0b1000 | 20 | 0 |
-| 0b0100 | 201 | 10 |
-| 0b1100 | 201 | 0 |
+| Mode   | A setting | Resulting A intensity |
+|--------|-----------|-----------------------|
+| 0b0100 | 195       | 200                   |
+| 0b1000 | 20        | 0                     |
+| 0b0100 | 201       | 10                    |
+| 0b1100 | 201       | 0                     |
 
 ##### Channel Pulse Frequency and Intensity
 
 Each Pulse frequency value occupies one byte and ranges from 10 to 240. Each Pulse intensity value occupies one byte and ranges from 0 to 100.
 
-Every B0 command contains four frequency/intensity pairs per channel. Each pair represents 25 ms of output, so four pairs cover 100 ms. If any value for a channel is out of range, the device discards all four pairs for that channel.
+Every B0 command contains four frequency/intensity pairs per channel. Each pair represents 25 ms of output, so four pairs cover 100 Ms. If any value for a channel is out of range, the device discards all four pairs for that channel.
 
 Your application can use Pulse frequency values from 10 to 1000, then convert them to the transmitted range as follows:
 
