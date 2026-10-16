@@ -1,51 +1,50 @@
-# DG-LAB 开源
+<div align="center">
 
-**DG-LAB** 设备在全球范围内得到了广大朋友的认可与喜爱。许多朋友希望我们的设备能够参与到更多有趣、自由、多样化的场景中。
+<img src="dglab.webp" alt="DG-LAB Logo" width="128" />
 
-因此，我们将 DG-LAB 具有代表性的设备蓝牙协议以开源形式分享出来。您可以基于该协议，使用不同的编程语言、开发框架或创意方案，将 DG-LAB 设备接入到自己的娱乐场景中。
+# DG-LAB Bluetooth Protocols
 
-> 本开源蓝牙协议旨在让 DG-LAB 爱好者更加自由地使用设备。未经授权，请勿将本内容用于任何商业用途。如有商业合作需求，请 [联系我们](https://www.dungeon-lab.com)。技术咨询 QQ：[3849540080](tencent://message/?site=qq&menu=yes&uin=3849540080)（**仅供开源技术相关问题咨询**）
+English | [简体中文](README_CN.md)
 
-## 郊狼情趣脉冲主机
+</div>
 
-[蓝牙协议 V2](coyote/v2/README.md)
+**DG-LAB** devices are enjoyed by users around the world. Many in our community want to integrate them into a wider range of creative, flexible, and personalized experiences.
 
-[蓝牙协议 V3](coyote/v3/README.md)
+This repository shares the Bluetooth protocols for selected DG-LAB devices. Use the language, framework, or approach of your choice to integrate these devices into your own projects.
 
-[脉冲波形解释](coyote/README.md)
+> These protocols are published to give DG-LAB enthusiasts more freedom to use their devices. Commercial use of this content requires prior authorization. For commercial partnerships, [contact us](https://www.dungeon-lab.com). For technical questions, contact QQ [3849540080](tencent://message/?site=qq&menu=yes&uin=3849540080) (**questions about the published protocols and related development only**).
 
-## 爪印无线按钮传感器
+## Coyote Stimulator
 
-[蓝牙协议 V1.1](paw-prints/README.md)
+- [Bluetooth Protocol V2](coyote/v2/README.md)
+- [Bluetooth Protocol V3](coyote/v3/README.md)
+- [Understanding Pulses](coyote/README.md)
 
-[外部电压检测的解释与使用示例](paw-prints/extvoltageinput/README.md)
+## Pawprint Wireless Button Sensor
 
-## 灵猫边缘控制传感器
+- [Bluetooth Protocol V1.1](paw-prints/README.md)
+- [External Voltage Detection: Explanation and Examples](paw-prints/extvoltageinput/README.md)
 
-[蓝牙协议 V1](civet-edging-sensor/README.md)
+## Civet Edging Sensor
 
-## 负鼠振动控制器
+- [Bluetooth Protocol V1](civet-edging-sensor/README.md)
 
-[蓝牙协议 V1](opossum-vibrate-controller/README.md)
+## Opossum Vibration Controller
 
-## 更新日志
+- [Bluetooth Protocol V1](opossum-vibrate-controller/README.md)
 
-2026/06/11 -> 新增爪印无线按钮传感器 V1.1 蓝牙协议，补充负鼠振动控制器指令
+## Changelog
 
-2026/06/09 -> 新增负鼠振动控制器蓝牙协议
+- 2026/10/16: Added English documentation.
+- 2026/10/15: Corrected errors in the Civet, Coyote, and Pawprint protocol documentation and examples.
+- 2026/06/11: Added the Pawprint V1.1 Bluetooth protocol and additional Opossum commands.
+- 2026/06/09: Added the Opossum Vibration Controller Bluetooth protocol.
+- 2026/06/04: Added the Civet Edging Sensor Bluetooth protocol.
+- 2026/06/02: Improved the documentation and reorganized the repository.
+- 2025/04/23: Corrected errors in the V3 Bluetooth protocol documentation.
+- 2025/02/10: Added an explanation and examples for Pawprint external voltage detection.
+- 2024/10/28: Added sample Pulse data for V2 and V3.
+- 2024/04/25: Updated parts of the Pulse explanation.
+- 2024/01/11: Updated the V3 protocol sections on channel intensity and Pulse output.
 
-2026/06/04 -> 新增灵猫边缘控制传感器蓝牙协议
-
-2026/06/02 -> 优化文档、重新组织仓库
-
-2025/04/23 -> 调整 V3 蓝牙协议错误修正
-
-2025/02/10 -> 新增爪印外部电压检测的解释与使用示例
-
-2024/10/28 -> 新增 V2/V3 波形示例数据
-
-2024/04/25 -> 更新脉冲波形的部分解释
-
-2024/01/11 -> 更新 V3 版本的通道强度和波形输出相关协议
-
-V3 配件玩法相关内容以及开源形式正在修订中
+Documentation for V3 accessory interactions and how it will be shared is being revised.

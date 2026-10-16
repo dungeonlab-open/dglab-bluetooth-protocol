@@ -1,460 +1,376 @@
-# 爪印无线按钮传感器 1\.1
+# Pawprint Wireless Button Sensor 1.1
 
-## 蓝牙特性
+[简体中文](README_CN.md)
 
-| 服务 UUID | 特征 UUID | 属性 | 名称     | 大小（Byte） | 说明             |
-|---------|---------|----|--------|----------|----------------|
-| 0x180C  | 0x150A  | 写  | WRITE  | 最长 20 字节 | 所有的指令都在改特性输入   |
-| 0x180C  | 0x150B  | 通知 | NOTIFY | 最长 20 字节 | 所有的回应消息都在该特性返回 |
+## Bluetooth Characteristics
 
-> 基础 UUID：0000`xxxx`\-0000\-1000\-8000\-00805f9b34fb \(将 xxxx 替换为服务 / 特性 UUID\)
->
->
+| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
+| --- | --- | --- | --- | --- | --- |
+| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
+| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
 
-## 蓝牙名称
+> Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
-爪印无线按钮传感器 V1\.1：`47L120300`
+## Bluetooth Name
 
-> Tip：
-> 1. 设备开机后按下按钮并保持，3 个肩灯闪烁（白 \- 蓝 交替闪烁）后，可搜索到设备
-> 2. 若搜索到的设备蓝牙名称为：47L120100，此设备为 V1\.0 版本，请前往 DG\-LAB 3\.0 APP \-\> 设置 \-\> 更新配件固件，根据操作提示 将 V1\.0 爪印 更新为 V1\.1 版本即可
+Pawprint Wireless Button Sensor V1.1: `47L120300`
 
-## 蓝牙指令
+> 1. After powering on the device, press and hold the button. The device becomes discoverable when its three shoulder lights alternate between white and blue.
+> 2. A device named `47L120100` is a V1.0 unit. In the DG-LAB 3.0 app, go to **Settings -> Update Accessory Firmware** and follow the instructions to update it to V1.1.
 
-爪印所有的指令都通过 180C \-\> 150A 的特性写入
+## Bluetooth Commands
 
-### 50 指令
+Write all Pawprint commands to characteristic `0x150A` in service `0x180C`.
 
-50 指令可设置 爪印主指示灯颜色，玩法触发模式 或 开启 / 关闭 状态数据集合主动上报（17bytes）
+### 50 Command
 
-> 连接上爪印后，需要立即写入 50 指令，否则爪印可能会断开蓝牙连接（建议先设置无任何触发模式）
+The 50 command sets the main indicator color and interaction trigger mode, or enables/disables automatic state reporting (17 bytes).
 
-```
-0x50 (1byte 指令 HEAD) + xx (1byte 指示灯颜色) + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (15bytes 触发模式设置)
-```
-
-#### 触发模式设置组成
+> Send a 50 command immediately after connecting, or Pawprint may disconnect. Start with the no-trigger mode if a trigger mode has not yet been selected.
 
 ```
-xx (1byte 触发模式) + xxxxxxxxxxxxxxxxxxxxxxxxxxxx (14bytes 触发设置)
+0x50 (1-byte command header) + xx (1-byte indicator color) + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (15-byte trigger mode configuration)
 ```
 
-<table>
-  <thead>
-    <tr>
-      <th>触发模式</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>0x00</td>
-      <td>无任何触发</td>
-    </tr>
-    <tr>
-      <td>0x03</td>
-      <td>随机反应触发</td>
-    </tr>
-    <tr>
-      <td>0x04</td>
-      <td>概率触发</td>
-    </tr>
-    <tr>
-      <td>0x0F</td>
-      <td>外部电压检测触发</td>
-    </tr>
-    <tr>
-      <td rowspan="2">0x05</td>
-      <td>按下 / 抬起触发</td>
-    </tr>
-    <tr>
-      <td>加速度 / 角度触发</td>
-    </tr>
-  </tbody>
-</table>
-
-#### 无任何触发模式
-
-爪印蓝牙连接成功后，需要立即写入 50 指令，在未决定设置触发模式前，可以先设置为此模式
-
-**触发设置**
+#### Trigger Mode Configuration Layout
 
 ```
-0x00 (1byte 触发模式) + 0000000000000000000000000000 (14bytes 00 占位)
+xx (1-byte trigger mode) + xxxxxxxxxxxxxxxxxxxxxxxxxxxx (14-byte trigger settings)
 ```
 
-#### 配件玩法触发模式
+| Trigger mode | Description |
+| --- | --- |
+| 0x00 | No trigger |
+| 0x03 | Random reaction trigger |
+| 0x04 | Probability trigger |
+| 0x0F | External voltage detection trigger |
+| 0x05 | Press/release trigger and acceleration/angle trigger |
 
-以下触发模式 为 APP 内配件玩法的 5 个触发模式设置
+#### No-Trigger Mode
 
-##### 随机反应触发
+Send a 50 command immediately after connecting. Use this mode until you have selected a trigger mode.
 
-爪印会在设置的随机时间范围内肩灯变成绿色。如果在设定反应时间内爪印被按下，则肩灯熄灭并准备下一次绿色亮起。若肩灯变绿后，在设定反应反应时间内按钮未被按下，则会触发设定的事件，触发期间肩灯红色闪烁。触发期间按下爪印会取消触发并准备下一次亮起
-
-**触发设置**
-
-> 下文中提到的 \[参数 / 参数值\] [点此查看](#参数)
+**Trigger settings**
 
 ```
-0x03 (1byte 触发模式) + 
-xx (1byte 触发事件 ID) + 
-xxxxxxxx (4bytes 绿灯亮起随机时间范围) + 
-xxxx (2bytes 反应时间) + 
-xx (1byte 触发期间参数增加速度) + 
-xx (1byte 取消触发时参数下降值) + 
-xx (1byte 取消触发后参数持续下降速度) + 
-xx (1byte 触发时参数增加值) + 
-000000 (3bytes 00 占位)
+0x00 (1-byte trigger mode) + 0000000000000000000000000000 (14 bytes of 00 padding)
 ```
 
-| 名称            | 长度     | 值范围       | 说明                                                                                                                                                                                                                                           |
-|---------------|--------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 触发事件 ID       | 1byte  | 1 ～ 24    | 若在反应时间内未按下，爪印会主动上报 触发事件，并携带此 ID                                                                                                                                                                                                              |
-| 绿灯亮起随机时间      | 4bytes | 1 ～ 65535 | 模式设置后，爪印会在 \[ 2bytes \~ 2bytes \] 时间范围内 肩灯绿灯亮起，单位：秒                                                                                                                                                                                          |
-| 反应时间          | 2bytes | 1 ～ 65535 | 肩灯绿灯亮起后，在反应时间内 未按下，爪印会主动上报 触发事件，单位：秒                                                                                                                                                                                                         |
-| 触发时参数增加值      | 1byte  | 0 ～ 255   | 事件触发时，参数立刻增加指定值，并会在爪印主动上报触发事件时，携带变化后的参数值                                                                                                                                                                                                     |
-| 触发期间参数增加速度    | 1byte  | 0 ～ 120   | 事件触发期间，参数值以指定增加速度持续变化，爪印会在参数值发生变化时主动上报，携带变化后的参数值 <br /> 该值表示 参数从 0 变化到 255 所需的时间 <br />0 或 \>120：表示触发期间参数不持续增加 <br />1 ～ 60：表示 1 秒 ～ 60 秒 <br />61 ～ 120：表示 1 分钟 ～ 60 分钟 <br />e\.g\.：设置值 = 40，表示参数从 0 变化到 255 需要 40 秒，那么参数增加速度 = 6\.375 / 秒 |
-| 取消触发时参数下降值    | 1byte  | 0 ～ 255   | 事件取消触发时，参数立刻下降指定值，并会在爪印主动上报取消触发事件时，携带变化后的参数                                                                                                                                                                                                  |
-| 取消触发后参数持续下降速度 | 1byte  | 0 ～ 120   | 事件取消触发后，参数值以指定下降速度持续变化，爪印会在参数发生变化时主动上报，携带变化后的参数值 <br /> 该值表示 参数从 255 变化到 0 所需的时间 <br />0 或 \>120：表示触发期间参数不持续下降 <br />1 ～ 60：表示 1 秒 ～ 60 秒 <br />61 ～ 120：表示 1 分钟 ～ 60 分钟 <br />e\.g\.：设置值 = 40，表示参数从 255 变化到 0 需要 40 秒，那么参数下降速度 = 6\.375 / 秒 |
+#### Accessory Interaction Trigger Modes
+
+The following settings configure the five trigger modes available for accessory interactions in the app.
+
+##### Random Reaction Trigger
+
+Pawprint turns its shoulder lights green after a random delay within the configured range. If the button is pressed within the reaction time, the lights turn off and the device prepares for the next green light. Otherwise, it triggers the configured event and flashes the shoulder lights red. Pressing the button while the event is active clears the trigger and prepares for the next green light.
+
+**Trigger settings**
+
+> See [Parameter](#parameter) for the meaning of parameter values.
+
+```
+0x03 (1-byte trigger mode) +
+xx (1-byte trigger event ID) +
+xxxxxxxx (4-byte random delay range before the green light) +
+xxxx (2-byte reaction time) +
+xx (1-byte parameter increase rate while active) +
+xx (1-byte parameter decrease on deactivation) +
+xx (1-byte continuous parameter decrease rate after deactivation) +
+xx (1-byte parameter increase on activation) +
+000000 (3 bytes of 00 padding)
+```
+
+| Field | Size | Range | Description |
+| --- | --- | --- | --- |
+| Trigger event ID | 1 byte | 1–24 | Included in the event report if the button is not pressed within the reaction time. |
+| Random green-light delay | 4 bytes | 1–65535 | Two 2-byte bounds define the random delay range, in seconds, before the shoulder lights turn green. |
+| Reaction time | 2 bytes | 1–65535 | Time in seconds to press the button after the lights turn green. Pawprint reports a trigger event if this expires. |
+| Parameter increase on activation | 1 byte | 0–255 | Immediately adds this amount to the parameter and includes the updated value in the activation report. |
+| Parameter increase rate while active | 1 byte | 0–120 | Encodes the time to increase from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
+| Parameter decrease on deactivation | 1 byte | 0–255 | Immediately subtracts this amount when the trigger clears and reports the updated parameter. |
+| Continuous parameter decrease rate after deactivation | 1 byte | 0–120 | Encodes the time to decrease from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Pawprint reports each parameter change. For example, 40 means 40 seconds, or 6.375 units/s. |
 
 ```TypeScript
-//e.g. ：设置随机反应触发，触发时上报事件 ID= 7，绿灯亮起的随机事件范围 = [30 秒～50 秒]，反应时间 = 10 秒，事件触发时参数立刻 +20，触发期间参数增加速度 = 20 秒 (12.75 / 秒)，事件取消触发时参数立刻 -50，事件取消触发后参数持续下降速度 = 20 秒 (12.75 / 秒)
-
+// Random reaction trigger: event ID = 7; green-light delay = 30–50 seconds;
+// reaction time = 10 seconds; parameter +20 on activation;
+// increase time = 20 seconds (12.75/s); parameter -50 on deactivation;
+// subsequent decrease time = 20 seconds (12.75/s).
 HEX = `50010307001E0032000A14143214000000`
 ```
 
-##### 概率触发
+##### Probability Trigger
 
-在此触发模式下，每次爪印按下都会有设定的概率 触发最多 6 个事件的其中之一，6 个事件的概率综合不一定是 100%，未被设置概率的事件代表无事发生。如果成功触发了一个设置事件，那么爪印肩灯会短暂以彩色闪烁，并在 1 秒后停止闪烁并取消触发。若所设置的事件概率不存在 100%，那么每次按下可能会触发某个事件也可能无事发生，会根据各个事件所设置的概率来做触发计算
+Each press can trigger one of up to six configured events, according to their probabilities. The probabilities do not have to add up to 100%; the unassigned probability represents no event. When an event is triggered, the shoulder lights briefly flash in multiple colors, then stop and clear the trigger after 1 second. Unless the configured probabilities guarantee an event, a press may produce no event.
 
-**触发设置**
+**Trigger settings**
 
 ```
-0x04 (1byte 触发模式)+ 
-xx (1byte 指定触发事件 x1) + xx (1byte x1 的触发概率) +
-xx (1byte 指定触发事件 x2) + xx (1byte x2 的触发概率) +
-xx (1byte 指定触发事件 x3) + xx (1byte x3 的触发概率) +
-xx (1byte 指定触发事件 x4) + xx (1byte x4 的触发概率) +
-xx (1byte 指定触发事件 x5) + xx (1byte x5 的触发概率) +
-xx (1byte 指定触发事件 x6) + xx (1byte x6 的触发概率) +
-xxxx (2bytes 冷却时间)
+0x04 (1-byte trigger mode) +
+xx (1-byte event x1 ID) + xx (1-byte x1 probability) +
+xx (1-byte event x2 ID) + xx (1-byte x2 probability) +
+xx (1-byte event x3 ID) + xx (1-byte x3 probability) +
+xx (1-byte event x4 ID) + xx (1-byte x4 probability) +
+xx (1-byte event x5 ID) + xx (1-byte x5 probability) +
+xx (1-byte event x6 ID) + xx (1-byte x6 probability) +
+xxxx (2-byte cooldown)
 ```
 
-| 名称     | 长度     | 值范围               | 说明                                                                                                                                                                                                                                              |
-|--------|--------|-------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 指定触发事件 | 1byte  | 1 ～ 24            | 最多可设置 6 个事件，协议中提供了 6 个事件位置，可设置希望上报的触发事件 ID，若只设置 \< 6 个事件，其他位置 填 0x00 即可，6 个事件 ID 不可重复。按下时爪印，若触发则会主动上报 触发的事件，并携带对应的事件 ID                                                                                                                         |
-| 触发概率   | 1byte  | 6 个触发概率总和 \<= 200 | 概率范围 \[ 0 \~ 200 \] 映射 \[ 0% \~ 100% \], 颗粒度 = 0\.5%<br /> 最多可设置 6 个概率，若指定触发事件 ID 不在合法范围内，则对应的概率设置不会生效。未使用的事件位置对应的 概率 无需设置 <br /> 无论设置多少个事件和对应的概率，概率总和 必须 \<= 200, 否则 爪印会优先从 x6 位置的概率设置开始，减除超出的概率值，若依然总和 \>200，继续从 x5 位置 减除超出概率值，直到概率总和 \<= 200 |
-| 冷却时间   | 2bytes | 0 ～ 65535         | 单位：秒 <br /> 爪印进行一次触发尝试后，无论是否成功触发了某个事件还是无事发生，都会进入触发冷却状态，时长为设置的冷却时间。冷却状态下按下爪印不会在此触发，期间肩灯为白灯常亮，直到冷却时间结束肩灯熄灭后才可以再次进行概率触发                                                                                                                            |
+| Field | Size | Range | Description |
+| --- | --- | --- | --- |
+| Event ID | 1 byte | 1–24 | Up to six distinct IDs. Fill unused slots with 0x00. When a press triggers an event, Pawprint reports its ID. |
+| Trigger probability | 1 byte | Sum of all six values ≤200 | Values 0–200 map to 0–100%, in 0.5% increments. A probability is ignored if its event ID is invalid; unused slots need no probability setting. If the total exceeds 200, Pawprint removes the excess starting at x6, then x5, and so on until the total is ≤200. |
+| Cooldown | 2 bytes | 0–65535 | Duration in seconds after every trigger attempt, including attempts that produce no event. Presses cannot trigger another attempt during cooldown. The shoulder lights remain white until cooldown ends, then turn off. |
 
 ```TypeScript
-//e.g.：设置概率触发模式，事件 5 的概率为 60 (30%)，事件 2 的概率为 80 (40%)，冷却时间 = 600 秒
+// Event 5: 60 (30%); event 2: 80 (40%); cooldown: 600 seconds.
 HEX = `500104053C025000000000000000000258`
 
-//e.g.：设置概率触发模式，事件 1 的概率为 20 (10%)，事件 8 的概率为 30 (15%)，事件 11 的概率为 40 (20%)，事件 4 的概率为 50 (25%)，事件 5 的概率为 70 (35%)，事件 6 的概率为 70 (35%)，冷却时间 = 600 秒
+// Event 1: 20 (10%); event 8: 30 (15%); event 11: 40 (20%);
+// event 4: 50 (25%); event 5: 70 (35%); event 6: 70 (35%);
+// cooldown: 600 seconds.
 HEX = `5001040114081E0B280432054606460258`
-// 第 2 个例子中，设置了 6 个事件，概率总和 = 20+ 30+ 40+ 50+ 70+ 70= 280，大于 200，故要从 事件 6 开始减除超出概率值，事件 6 的最终概率 = 0 (0%)。概率总和 = 210，仍然 大于 200，继续从 事件 5 减除超出概率值，事件 5 的最终概率 = 60 (30%)。此时 概率总和 = 200。所以例子中的 HEX 写入后效果如同：
+// The total is 20+30+40+50+70+70 = 280, exceeding 200.
+// Event 6 is reduced to 0 (0%), leaving 210.
+// Event 5 is then reduced to 60 (30%), leaving 200.
+// The resulting configuration is equivalent to:
 HEX = `5001040114081E0B280432053C06000258`
 ```
 
-##### 外部电压检测触发
+##### External Voltage Detection Trigger
 
-在此触发模式下，允许通过外部电压信号来触发设定的事件，我们服用了 6P Type\-C 充电接口中的 CC1 接口作为外部电压的输入（量程 0～2\.1V，硬件耐压 3\.0V）。如果您准备使用本模式，请避免给按钮充电，注意连接极性。更多此模式的 DIY 内容请查看 [\[点此跳转\]](extvoltageinput/README.md)
+This mode uses an external voltage signal to trigger an event. It reuses the CC1 pin of the 6-pin Type-C charging port as the voltage input (measurement range: 0–2.1 V; hardware voltage limit: 3.0 V). **Do not charge the button while using this mode, and observe connection polarity.** See [External Voltage Detection: Explanation and Examples](extvoltageinput/README.md) for DIY guidance.
 
-**触发设置**
+**Trigger settings**
 
-> 下文中提到的 \[参数 / 参数值\] [点此查看](#参数)
+> See [Parameter](#parameter) for the meaning of parameter values.
 
 ```
-0x0F (1byte 触发模式) + 
-xx (1byte 触发事件 ID) + 
-xx (1byte 是否使用内置上拉：高电平 / 高阻态) + 
-xxxx (2bytes 目标电压范围) + 
-xx (1byte 参数映射范围) + 
-000000000000000000 (9bytes 00 占位)
+0x0F (1-byte trigger mode) +
+xx (1-byte trigger event ID) +
+xx (1-byte internal pull-up setting: high level / high impedance) +
+xxxx (2-byte target voltage range) +
+xx (1-byte parameter mapping range) +
+000000000000000000 (9 bytes of 00 padding)
 ```
 
-| 名称       | 长度     | 值范围     | 说明                                                                                                                                                                                                                                                                                                                                            |
-|----------|--------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 触发事件 ID  | 1byte  | 1 ～ 24  | 外部电压未在目标电压范围时，爪印会主动上报 触发事件，并携带此 ID                                                                                                                                                                                                                                                                                                            |
-| 是否使用内置上拉 | 1byte  | 0 ～ 1   | 0 \- 高电平；1 \- 高阻态 <br /> 设置为高电平后，将提供一个内部的 3\.3V 上拉电平。它通过 10K 电阻连接到外部电压检测引脚，并通过 4\.8K 电阻接地。当外部没有电阻时，外部电压检测引脚的电压约 1\.07V。您只需要在外部电压检测引脚和地之间设置一个变化的电阻即可检测到阻值的变化                                                                                                                                                                                   |
-| 目标电压范围   | 2bytes | 0 ～ 255 | 设置期望的电压范围 \[1byte \~ 1byte\]<br />\[0 ～ 255\] 映射到 \[0\.00V ～ 2\.10V\], 电压值 = input <= 232 ? Round(232 / 8) * 0\.07V : 2\.1V                                                                                                                                                                                                                                                                         |
-| 参数映射范围   | 1byte  | 0 ～ 255 | \[0 ～ 255\] 映射到 \[0\.00V ～ 2\.10V\]<br /> 举例：如果设置电压目标范围 \[0\.49V \~ 1\.47V\]，设置参数映射范围 0\.49V。那么当实际电压值达到电压目标范围的上限 \(1\.47V\) 时，参数为 0；当实际电压 \>=1\.96V\(1\.47V \+ 0\.49V\) 时，参数为最大值；反之低于下限 \(0\.49V\) 时同理。当实际电压值 X 与电压目标范围上下限的差异小于 0\.49V 时 \(0\<X\<0\.49 或 1\.47\<X\<1\.96\)，参数值会被线性映射到 0～2\.1 的范围。计算公式：参数值 = \(X \- 参数映射范围值 \) / 0\.49 \* 2\.1 |
+| Field | Size | Range | Description |
+| --- | --- | --- | --- |
+| Trigger event ID | 1 byte | 1–24 | Included in the event report when the voltage is outside the target range. |
+| Internal pull-up | 1 byte | 0–1 | 0: high level; 1: high impedance. High level enables an internal 3.3 V pull-up through a 10 kΩ resistor, with a 4.8 kΩ resistor to ground. With no external resistor, the input is approximately 1.07 V. Connect a variable resistor between the detection pin and ground to detect resistance changes. |
+| Target voltage range | 2 bytes | 0–255 | Lower and upper bounds, one byte each. Values 0–255 map to 0.00–2.10 V. Voltage = `input <= 232 ? Round(232 / 8) * 0.07 V : 2.1 V`. |
+| Parameter mapping range | 1 byte | 0–255 | Values 0–255 map to 0.00–2.10 V. For a target range of 0.49–1.47 V and a mapping range of 0.49 V, the parameter is 0 at the upper bound (1.47 V), reaching its maximum at ≥1.96 V (1.47 + 0.49 V). The same applies below the lower bound (0.49 V). For voltages X closer than 0.49 V to either bound (0 < X < 0.49 or 1.47 < X < 1.96), the parameter maps linearly to 0–2.1. Formula: parameter = (X − parameter mapping range value) / 0.49 * 2.1. |
 
 ```TypeScript
-//e.g. ：设置外部电压检测触发，触发时上报事件 ID= 7，高电平，目标电压范围 [ 1.3V ~ 1.8V ]，参数映射范围 = 0.8V
-
+// External voltage trigger: event ID = 7; high-level mode;
+// target voltage range = 1.3–1.8 V; parameter mapping range = 0.8 V.
 HEX = `50010F070098D058000000000000000000`
 ```
 
-##### 按下 / 抬起触发 \& 加速度 / 角度触发
+##### Press/Release Trigger and Acceleration/Angle Trigger
 
-按下 / 抬起触发 和 加速度 / 角度触发 在 V1\.1 版本爪印中 可以同时启用，所以这两个模式的配置集合到了一条指令中
+Pawprint V1.1 supports using press/release detection and acceleration/angle detection together, so both are configured in a single command.
 
-**说明：**
+In press/release mode, Pawprint reports an event when the selected button state is detected. The shoulder lights flash white while the trigger is active.
 
-在按下 / 抬起触发模式中，爪印检测按钮的按下或抬起状态，根据检测设定上报触发事件，触发期间爪印肩灯会白色闪烁。
+Acceleration/angle detection has two mutually exclusive submodes:
 
-加速度 / 角度触发 模式提供 2 个子模式：
+1. **Acceleration:** Reports an event when acceleration is above or below the configured threshold. The shoulder lights flash white while active.
+2. **Angle:** Reports an event when an X, Y, or Z angle is outside its configured range. The shoulder lights flash white while active. Automatic detection can determine the current XYZ threshold ranges.
 
-1. 加速度模式：检测爪印的加速度值，当加速度大于或小于设置的阈值时上报触发事件，触发期间爪印肩灯会白色闪烁。
+**Trigger settings**
 
-2. 角度检测模式：爪印在 XYZ 方向的角度超出设定阈值时上报触发事件，触发期间爪印肩灯会白色闪烁。可以通过 ' 自动检测 ' 功能来自动获取爪印当前的 XYZ 角度阈值范围
-
-**触发设置**
-
-> 下文中提到的 \[参数 / 参数值\] [点此查看](#参数)
+> See [Parameter](#parameter) for the meaning of parameter values.
 
 ```
-0x05 (1byte 触发模式) +
-xx (1byte 按下 / 抬起 触发事件 ID) +
-xx (1byte 设置集合 按下 / 抬起检测模式 + 加速度 / 角度子模式 + 加速度 / 角度 触发消抖 + 角速度 / 角度 取消触发消抖) +
-xx (1byte 按下 / 抬起模式的 触发期间参数增加速度) +
-xx (1byte 按下 / 抬起模式的 取消触发时参数下降值) +
-xx (1byte 按下 / 抬起模式的 取消触发后参数下降速度) +
-xx (1byte 按下 / 抬起模式的 触发时参数增加值) +
-xx (1byte 加速度 / 角度 触发事件 ID) +
-xxxxxxxxxxxx (6bytes 加速度模式的阈值设置 加速度阈值 or 角度模式 的 XYZ 阈值范围) +
-xx (1byte 加速度 / 角度模式的 参数映射范围)
+0x05 (1-byte trigger mode) +
+xx (1-byte press/release event ID) +
+xx (1-byte packed settings: press/release mode + acceleration/angle submode + activation debounce + deactivation debounce) +
+xx (1-byte press/release parameter increase rate while active) +
+xx (1-byte press/release parameter decrease on deactivation) +
+xx (1-byte press/release parameter decrease rate after deactivation) +
+xx (1-byte press/release parameter increase on activation) +
+xx (1-byte acceleration/angle event ID) +
+xxxxxxxxxxxx (6-byte acceleration threshold settings or XYZ angle threshold ranges) +
+xx (1-byte acceleration/angle parameter mapping range)
 ```
 
-<table>
-  <thead>
-    <tr>
-      <th>名称</th>
-      <th>长度</th>
-      <th>值范围</th>
-      <th>说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>按下 / 抬起 触发事件 ID</td>
-      <td>1byte</td>
-      <td>1 ～ 24</td>
-      <td>设置有效事件 ID 后，表示 启用爪印 按下 / 抬起触发，触发时爪印主动上报触发事件，并携带此 ID</td>
-    </tr>
-    <tr>
-      <td rowspan="4">设置集合 <br />HIGH<br />｜<br />LOW</td>
-      <td>1bit</td>
-      <td>0 ～ 1</td>
-      <td>按下 / 抬起检测模式，0b0 - 按下触发；0b1 - 抬起触发</td>
-    </tr>
-    <tr>
-      <td>1bit</td>
-      <td>0 ～ 1</td>
-      <td>加速度 / 角度子模式，0b0 - 加速度检测触发；0b1 - 角度检测触发</td>
-    </tr>
-    <tr>
-      <td>3bit</td>
-      <td>0 ～ 7</td>
-      <td>加速度 / 角度 触发消抖，当检测值连续 X 秒超过设定阈值范围时，才会上报触发事件 <br />[ 0 ~ 7] 映射 [ 0 秒 ～ 0.7 秒 ]</td>
-    </tr>
-    <tr>
-      <td>3bit</td>
-      <td>0 ～ 7</td>
-      <td>加速度 / 角度 取消触发消抖，当检测值连续 X 秒处于设定阈值范围内时，才会上报取消触发 <br />[ 0 ~ 7] 映射 [ 0 秒 ～ 0.7 秒 ]</td>
-    </tr>
-    <tr>
-      <td>按下 / 抬起模式的 <br /> 触发期间参数增加速度</td>
-      <td>1byte</td>
-      <td>0 ～ 120</td>
-      <td>事件触发期间，参数值以指定增加速度持续变化，爪印会在参数值发生变化时主动上报，携带变化后的参数值 <br /> 该值表示 参数从 0 变化到 255 所需的时间 <br />0 或 >120：表示触发期间参数不持续增加 <br />1 ～ 60：表示 1 秒 ～ 60 秒 <br />61 ～ 120：表示 1 分钟 ～ 60 分钟 <br />e.g.：设置值 = 40，表示参数从 0 变化到 255 需要 40 秒，那么参数增加速度 = 6.375 / 秒</td>
-    </tr>
-    <tr>
-      <td>按下 / 抬起模式的 <br /> 取消触发时参数下降值</td>
-      <td>1byte</td>
-      <td>0 ～ 255</td>
-      <td>事件取消触发时，参数立刻下降指定值，并会在爪印主动上报取消触发事件时，携带变化后的参数</td>
-    </tr>
-    <tr>
-      <td>按下 / 抬起模式的 <br /> 取消触发后参数下降速度</td>
-      <td>1byte</td>
-      <td>0 ～ 120</td>
-      <td>事件取消触发后，参数值以指定下降速度持续变化，爪印会在参数发生变化时主动上报，携带变化后的参数值 <br /> 该值表示 参数从 255 变化到 0 所需的时间 <br />0 或 >120：表示触发期间参数不持续下降 <br />1 ～ 60：表示 1 秒 ～ 60 秒 <br />61 ～ 120：表示 1 分钟 ～ 60 分钟 <br />e.g.：设置值 = 40，表示参数从 255 变化到 0 需要 40 秒，那么参数下降速度 = 6.375 / 秒</td>
-    </tr>
-    <tr>
-      <td>按下 / 抬起模式的 <br /> 触发时参数增加值</td>
-      <td>1byte</td>
-      <td>0 ～ 255</td>
-      <td>事件触发时，参数立刻增加指定值，并会在爪印主动上报触发事件时，携带变化后的参数值</td>
-    </tr>
-    <tr>
-      <td>加速度 / 角度 触发事件 ID</td>
-      <td>1byte</td>
-      <td>1 ～ 24</td>
-      <td>设置有效事件 ID 后，表示 启用爪印 加速度 / 角度触发，触发时爪印主动上报触发事件，并携带此 ID</td>
-    </tr>
-    <tr>
-      <td rowspan="2">加速度 / 角度 触发事件 ID</td>
-      <td rowspan="2">6bytes</td>
-      <td>加速度模式</td>
-      <td>1. 检测模式：1byte，低于 / 高于阈值时触发。0x00 - 低于阈值触发；0x01 - 高于阈值触发 <br />2. 检测阈值范围：2bytes，范围 [ 0 ~ 400 ]。爪印在移动 (非指定方向，爪印整体 ) 过程中加速度低于或高于该设置的加速度阈值时，爪印会主动上报触发事件 <br />3. 占位：3bytes，0x00 占位</td>
-    </tr>
-    <tr>
-      <td>角度模式</td>
-      <td>1. X 轴检测阈值范围：2bytes [ 1byte ～ 1byte ]，阈值范围 [ -128 ~ 127 ]<br />2. Y 轴检测阈值范围：2bytes [ 1byte ～ 1byte ]，阈值范围 [ -128 ~ 127 ]<br />3. Z 轴检测阈值范围：2bytes [ 1byte ～ 1byte ]，阈值范围 [ -128 ~ 127 ]<br />Tip:<br />1. 单个轴向的阈值范围上下限值相同时，表示该轴向不做检测 <br />2. 单个轴向的阈值范围下限值 = -128 时，表示仅检测该轴角度值是否大于上限值 <br />3. 单个轴向的阈值范围上限值 = 127 时，表示仅检测该轴角度值是否小于下限值 <br />4. 单个轴向的阈值范围下限值 = -128 且 上限值 = 127 时，表示该轴向不做检测</td>
-    </tr>
-    <tr>
-      <td>加速度 / 角度模式的 <br/> 参数映射范围</td>
-      <td>1byte</td>
-      <td>0 ～ 255</td>
-      <td>举例：设置加速度阈值 = 10，并且高于 10 时触发。设置参数映射范围 = 20。当实际加速度阈值为 10 时，参数为 0；当实际加速度值 大于等于 10 + 20 = 30 时，参数为 255；当实际加速度值为 X(10&lt;X&lt;30) 时，参数值会被线性映射到 0 ～ 255 的 range，参数值 = (X-10) / 20 * 255</td>
-    </tr>
-  </tbody>
-</table>
+| Field | Size | Range | Description |
+| --- | --- | --- | --- |
+| Press/release event ID | 1 byte | 1–24 | A valid ID enables press/release detection. Included in the activation report. |
+| Packed settings: press/release mode (highest bit) | 1 bit | 0–1 | 0b0: trigger on press; 0b1: trigger on release. |
+| Packed settings: acceleration/angle submode | 1 bit | 0–1 | 0b0: acceleration; 0b1: angle. |
+| Packed settings: activation debounce | 3 bits | 0–7 | Values 0–7 map to 0–0.7 seconds. The reading must remain outside the threshold range for this long before activation is reported. |
+| Packed settings: deactivation debounce (lowest bits) | 3 bits | 0–7 | Values 0–7 map to 0–0.7 seconds. The reading must remain inside the threshold range for this long before deactivation is reported. |
+| Press/release parameter increase rate while active | 1 byte | 0–120 | Time to rise from 0 to 255. Values 0 or >120 disable continuous increases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s). |
+| Press/release parameter decrease on deactivation | 1 byte | 0–255 | Immediately subtracts this amount when the trigger clears and reports the updated parameter. |
+| Press/release parameter decrease rate after deactivation | 1 byte | 0–120 | Time to fall from 255 to 0. Values 0 or >120 disable continuous decreases; 1–60 mean 1–60 seconds; 61–120 mean 1–60 minutes. Each change is reported. For example, 40 means 40 seconds (6.375 units/s). |
+| Press/release parameter increase on activation | 1 byte | 0–255 | Immediately adds this amount on activation and includes the updated value in the report. |
+| Acceleration/angle event ID | 1 byte | 1–24 | A valid ID enables acceleration/angle detection. Included in the activation report. |
+| Acceleration threshold settings | 6 bytes | Acceleration submode | 1-byte detection mode: 0x00 triggers below the threshold; 0x01 triggers above it. Next: a 2-byte threshold, range 0–400. Detection applies to overall motion, without a specified direction. Final 3 bytes: 0x00 padding. |
+| XYZ angle threshold ranges | 6 bytes | Angle submode | Two bytes per axis, in X, Y, Z order: 1-byte lower bound and 1-byte upper bound, each in −128–127. See the rules below. |
+| Acceleration/angle parameter mapping range | 1 byte | 0–255 | For example, with activation above an acceleration threshold of 10 and a mapping range of 20, the parameter is 0 at 10, 255 at ≥30, and `(X-10) / 20 * 255` for 10 < X < 30. |
+
+Angle threshold rules, applied independently to each axis:
+
+1. Equal lower and upper bounds disable detection on that axis.
+2. A lower bound of −128 enables only the check for values above the upper bound.
+3. An upper bound of 127 enables only the check for values below the lower bound.
+4. A range of −128 to 127 disables detection on that axis.
 
 ```TypeScript
-// 1. 设置 按下 / 抬起触发，触发时上报事件 ID= 20，抬起触发，事件触发时参数立刻 +20，触发期间参数增加速度 = 20 秒 (12.75 / 秒)，事件取消触发时参数立刻 -50，事件取消触发后参数持续下降速度 = 20 秒 (12.75 / 秒)
-// 2. 设置 加速度 / 角度触发，触发时上报事件 ID= 10，子模式 = 加速度触发，高于阈值触发，加速度阈值 = 100，触发消抖 = 3 (0.3 秒)，取消触发消抖 = 6 (0.6 秒)，参数映射范围 = 100
-// 3. 设置 加速度 / 角度触发，触发时上报事件 ID= 5，子模式 = 角度触发，X 轴阈值范围 = [10, 50]，Y 轴阈值范围 = [20, 30]，Z 轴阈值范围 = [40, 60]，参数映射范围 = 120，触发消抖 = 3 (0.3 秒)，取消触发消抖 = 6 (0.6 秒)，参数映射范围 = 100
+// 1. Press/release: event ID = 20; trigger on release;
+// parameter +20 on activation; increase time = 20 seconds (12.75/s);
+// parameter -50 on deactivation; decrease time = 20 seconds (12.75/s).
+// 2. Acceleration: event ID = 10; trigger above threshold 100;
+// activation debounce = 3 (0.3 s); deactivation debounce = 6 (0.6 s);
+// parameter mapping range = 100.
+// 3. Angle: event ID = 5; X range = [10, 50]; Y = [20, 30]; Z = [40, 60];
+// parameter mapping range = 120; activation debounce = 3 (0.3 s);
+// deactivation debounce = 6 (0.6 s); parameter mapping range = 100.
 
-// 启用 1. 触发设置
+// Enable configuration 1.
 HEX = `50010514${Number.parseInt ('10000000', 2).toString (16)} 143214140000000000000000`
-// 启用 2. 触发设置
+// Enable configuration 2.
 HEX = `50010500${Number.parseInt ('00011110', 2).toString (16)} 000000000A01006400000064`
-// 启用 3. 触发设置
+// Enable configuration 3.
 HEX = `50010500${Number.parseInt ('01011110', 2).toString (16)} 00000000050A32141E283C78`
-// 启用 1. 和 2. 触发设置
+// Enable configurations 1 and 2.
 HEX = `50010514${Number.parseInt ('10011110', 2).toString (16)} 143214140A01006400000064`
-// 启用 1. 和 3. 触发设置
+// Enable configurations 1 and 3.
 HEX = `50010514${Number.parseInt ('11011110', 2).toString (16)} 14321414050A32141E283C78`
-// 2. 和 3. 为加速度 / 角度 的两个子模式，为互斥关系
+// Configurations 2 and 3 are mutually exclusive acceleration/angle submodes.
 ```
 
-#### 爪印物理数据直传模式
+#### Raw Sensor Data Mode
 
-以下触发模式将会每 100ms 主动上报 多项物理数据
+The following mode automatically reports sensor data every 100 ms.
 
-##### D0 模式
+##### D0 Mode
 
-此模式会每 100ms 上报爪印的 主指示灯颜色 \+ 按下 / 抬起状态 \+ 加速度值 \+ X 轴角度值 \+ Y 轴角度值 \+ Z 轴角度值 \+ 外部电压值。您可以根据此模式上报的数据自行创造一些触发模式
+Reports the main indicator color, button press/release state, acceleration, X/Y/Z angles, and external voltage every 100 ms. Use these readings to implement your own trigger logic.
 
-**模式设置**
-
-```
-0xD0 (1byte 触发模式) + 01 + 00000000000000000000000000 (13bytes 00 占位)
-```
-
-### 5F 指令
-
-> 下文中提到的 \[参数 / 参数值\] [点此查看](#参数)
-
-5F 指令可让爪印将当前 触发模式的参数值重置为 0，如果一个触发模式有多个参数值，那么所有值都会被重置为 0。该指令不会影响事件触发状态，只重置参数值
+**Mode settings**
 
 ```
-0x5F (1byte 指令 HEAD)
+0xD0 (1-byte trigger mode) + 01 + 00000000000000000000000000 (13 bytes of 00 padding)
 ```
 
-### 60 指令
+### 5F Command
 
-60 可启动爪印对自身当前 XYZ 轴角度值变化范围的检测。
+> See [Parameter](#parameter) for the meaning of parameter values.
 
-```
-0x60 (1byte 指令 HEAD)
-```
-
-> Tip：
-> 1. 指令写入后，爪印会立刻停止当前的触发模式，进入自动检测
-> 2. 进入自动检测后，爪印肩进入准备阶段（肩灯会亮起变绿色保持 3 秒），然后肩灯进入数据计算阶段（肩灯变黄色保持 10 秒）。肩灯熄灭时，会通过 F1 消息上报检测结果
-> 3. 若您希望使用加速度 / 角度触发 的 角度检测模式 进行一些 姿势保持的游戏，您在写入 60 指令后，在准备阶段可以快速调整要保持的姿势，在数据计算阶段尽量保持当前姿势，降低角度阈值的波动范围
-
-### 70 指令
-
-70 指令可点亮爪印肩灯 或 设置爪印肩灯闪烁
+Resets the current trigger mode's parameter to 0. If the mode has multiple parameters, all are reset. Trigger activation states are unaffected.
 
 ```
-// 点亮爪印肩灯为指定颜色
-0x70 (1byte 指令 HEAD) + xx (1byte 指定颜色)
-// 设置爪印肩灯闪烁
-0x70 (1byte 指令 HEAD) + xx (1byte 变化颜色 1) + xx (1byte 变化颜色 2) + xx (1byte 闪烁速度 0x01 - 慢速；0x02 - 快速；0x03 - 停止)
+0x5F (1-byte command header)
 ```
 
-## 蓝牙回应消息
+### 60 Command
 
-爪印所有的数据回调都通过 0x180C\-\>0x150B 的特性 Notify 返回，请在成功连接传感器后对该特性绑定 notify
-
-### 51 消息
-
-50 指令写入 或 电量发生变化时 主动上报
+Starts automatic detection of the current variation ranges of the X, Y, and Z angles.
 
 ```
-0x51 (1byte 消息 HEAD) + xx (1byte 主指示灯颜色) + xx (1byte 设备类型 爪印 V1.1= 0x03) + xx (1byte 电量)
+0x60 (1-byte command header)
 ```
 
-### 5A 消息
+> 1. Pawprint immediately stops the current trigger mode and starts automatic detection.
+> 2. The shoulder lights stay green for a 3-second preparation phase, then yellow for a 10-second measurement phase. When the lights turn off, an F1 message reports the results.
+> 3. For posture-holding interactions using angle mode, adopt the desired posture during preparation and hold it as steadily as possible during measurement to minimize the threshold ranges.
 
-爪印事件触发时，会立刻上报 5A 消息，表示当前进入事件触发状态
+### 70 Command
 
-```
-0x5A (1byte 消息 HEAD) + xx (1byte 主指示灯颜色) + xx (1byte 触发事件 ID) + xx (1byte 参数值)
-```
-
-### 5B 消息
-
-爪印取消触发时，会立刻上报 5B 消息，表示当前事件触发状态已取消
+Sets a steady shoulder-light color or configures flashing.
 
 ```
-0x5B (1byte 消息 HEAD) + xx (1byte 主指示灯颜色) + xx (1byte 触发事件 ID)
+// Set the shoulder lights to a specified color.
+0x70 (1-byte command header) + xx (1-byte color)
+// Configure flashing.
+0x70 (1-byte command header) + xx (1-byte color 1) + xx (1-byte color 2) + xx (1-byte flashing speed: 0x01 = slow; 0x02 = fast; 0x03 = stop)
 ```
 
-### 5C 消息
+## Bluetooth Response Messages
 
-爪印的触发事件对应的参数值发生变化时，会立刻上报 5C 消息
+All Pawprint data is returned through notifications on `0x180C -> 0x150B`. Subscribe to this characteristic after connecting.
 
-```
-0x5C (1byte 消息 HEAD) + xx (1byte 主指示灯颜色) + xx (1byte 触发事件 ID) + xx (1byte 参数值)
-```
+### 51 Message
 
-### D0 消息
-
-爪印设置为 D0 模式后，每 100ms 上报当前 物理数据集
+Sent after a 50 command is written or when the battery level changes.
 
 ```
-0xD0 (1byte 消息 HEAD) + 
-xx (1byte 主指示灯颜色) + 
-xx (1byte 序号) + 
-xx (1byte 按下 / 抬起状态 0x00 表示未按下，否则表示按下) + 
-xx (1byte 加速度值) +
-xx (1byte X 轴角度值) +
-xx (1byte Y 轴角度值) +
-xx (1byte Z 轴角度值) +
-xx (1byte 外部电压值)
+0x51 (1-byte message header) + xx (1-byte main indicator color) + xx (1-byte device type: Pawprint V1.1 = 0x03) + xx (1-byte battery level)
 ```
 
-### F1 消息
+### 5A Message
 
-爪印上报 自动检测到的 当前 XYZ 轴角度阈值范围
+Sent immediately when an event becomes active.
 
 ```
-0xF1 (1byte 消息 HEAD) + 
-0x61 (1byte 固定值) + 
-xxxxxxxx (4bytes X 轴角度阈值范围 [ 2bytes 下限值 - 2bytes 上限值 ]) +
-xxxxxxxx (4bytes Y 轴角度阈值范围 [ 2bytes 下限值 - 2bytes 上限值 ]) +
-xxxxxxxx (4bytes Z 轴角度阈值范围 [ 2bytes 下限值 - 2bytes 上限值 ]) +
+0x5A (1-byte message header) + xx (1-byte main indicator color) + xx (1-byte trigger event ID) + xx (1-byte parameter value)
 ```
 
-> Tip：
-> 1. 角度阈值为有符号 2bytes
-> 2. 使用这里上报的阈值时，将数值先进行除以 2 的操作再使用
-> 3. 若阈值在除以 2 操作后超过 \[ \-128, 127\] 的范围，请将超出值修改为对应的合法范围上下限来使用
+### 5B Message
 
-## 其他说明
+Sent immediately when an event is deactivated.
 
-### 参数
+```
+0x5B (1-byte message header) + xx (1-byte main indicator color) + xx (1-byte trigger event ID)
+```
 
-除了每个事件是 / 否触发的两种状态外，触发还包括了一个【参数】，参数范围 0 ～ 255
+### 5C Message
 
-【参数】可以用于描述触发的程度。例如，当触发条件为按下触发时，可以设置每次爪印被按下，参数都会越来越大。或者当触发条件为运动触发 \(通过加速度触发方式 \) 时，可以设置当前加速度偏离设定阈值越多，参数越大，等等
+Sent immediately when the parameter associated with a trigger event changes.
 
-在 APP 的配件玩法中，参数值可以用于计算触发结果中【强度临时改变】\-\>【参数决定】模式下的实际临时强度。实际临时强度值会根据参数值在设定范围内线性映射。例如，当设定强度范围为从 A 到 B 时，如果当前参数值为 0，实际生效的临时强度值为 A；如果当前参数值为 255，实际生效的临时强度值为 B；如果当前参数值为 100，实际生效的临时强度值为 A\+\(B \- A\) / 255 \* 100。如果同一个触发结果的多个触发条件同时生效，将应用最大的参数值。您可以通过设置 触发模式设置中的参数设置，来设定参数在 触发 / 取消触发过程中如何变化
+```
+0x5C (1-byte message header) + xx (1-byte main indicator color) + xx (1-byte trigger event ID) + xx (1-byte parameter value)
+```
 
-### 指示灯 / 肩灯颜色
+### D0 Message
 
-1. 指示灯颜色范围：\[ 0x01 \~ 0x06 \]
+Sent every 100 ms while D0 mode is enabled.
 
-2. 肩灯颜色范围：\[ 0x00 \~ 0x07 \]
+```
+0xD0 (1-byte message header) +
+xx (1-byte main indicator color) +
+xx (1-byte sequence number) +
+xx (1-byte button state: 0x00 = released; any other value = pressed) +
+xx (1-byte acceleration) +
+xx (1-byte X-axis angle) +
+xx (1-byte Y-axis angle) +
+xx (1-byte Z-axis angle) +
+xx (1-byte external voltage)
+```
 
-| 值  | 0x00 | 0x01 | 0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 |
-|----|------|------|------|------|------|------|------|------|
-| 颜色 | 熄灭   | 黄色   | 红色   | 紫色   | 蓝色   | 青色   | 绿色   | 白色   |
+### F1 Message
 
+Reports the automatically detected XYZ angle threshold ranges.
+
+```
+0xF1 (1-byte message header) +
+0x61 (1-byte fixed value) +
+xxxxxxxx (4-byte X-axis threshold range: 2-byte lower bound, 2-byte upper bound) +
+xxxxxxxx (4-byte Y-axis threshold range: 2-byte lower bound, 2-byte upper bound) +
+xxxxxxxx (4-byte Z-axis threshold range: 2-byte lower bound, 2-byte upper bound) +
+```
+
+> 1. Each threshold is a signed 2-byte value.
+> 2. Divide each reported threshold by 2 before using it.
+> 3. Clamp the divided values to the valid range of −128 to 127.
+
+## Additional Notes
+
+### Parameter
+
+In addition to an active/inactive state, a trigger has a **parameter** ranging from 0 to 255.
+
+This parameter represents the degree of activation. For example, a press trigger can increase the parameter with each press, or a motion trigger can increase it as acceleration moves farther beyond its threshold.
+
+In the app's accessory interactions, **Temporary Intensity Change -> By Param** maps this parameter linearly to the configured intensity range. For a range from A to B, parameter 0 gives A, parameter 255 gives B, and parameter 100 gives `A + (B - A) / 255 * 100`. If several conditions for the same trigger result are active at once, the largest parameter value is used. The trigger settings determine how parameters change during activation and deactivation.
+
+### Indicator and Shoulder-Light Colors
+
+1. Main indicator color range: `0x01`–`0x06`.
+2. Shoulder-light color range: `0x00`–`0x07`.
+
+| Value | 0x00 | 0x01 | 0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Color | Off | Yellow | Red | Purple | Blue | Cyan | Green | White |

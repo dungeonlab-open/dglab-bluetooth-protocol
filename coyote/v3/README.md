@@ -1,73 +1,99 @@
-## 郊狼情趣脉冲主机 V3
+## Coyote Stimulator V3
 
-### 蓝牙特性
+[简体中文](README_CN.md)
 
-| 服务 UUID | 特性 UUID |   属性   |     名称      | 大小 (BYTE) |       说明       |
-|:-------:|:-------:|:------:|:-----------:|:---------:|:--------------:|
-| 0x180C  | 0x150A  |   写    |    WRITE    | 最长 20 字节  |  所有的指令都在该特性输入  |
-| 0x180C  | 0x150B  |   通知   |   NOTIFY    | 最长 20 字节  | 所有的回应消息都在该特性返回 |
-| 0x180A  | 0x1500  | 读 / 通知 | READ/NOTIFY |   1 字节    |      电量信息      |
+### Bluetooth Characteristics
 
-> 基础 UUID：0000`xxxx`-0000-1000-8000-00805f9b34fb (将 xxxx 替换为服务 / 特性 UUID)
+| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
+| --- | --- | --- | --- | --- | --- |
+| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
+| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
+| 0x180A | 0x1500 | Read / Notify | READ/NOTIFY | 1 byte | Battery level |
 
-### 蓝牙名称
+> Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
-脉冲主机 3.0 : 47L121000
+### Bluetooth Names
 
-无线传感器 : 47L120100
+Stimulator 3.0: `47L121000`
 
-### 基本原理
+Wireless sensor: `47L120100`
 
-郊狼内置了两组独立的脉冲生成模块，分别对应 A，B 两个通道。<br /> 每组脉冲生成模块由通道强度和通道波形数据两部分构成。<br /> 通过通道强度，通道强度软上限，波形频率，波形强度，频率平衡参数 1，频率平衡参数 2 六个变量来控制脉冲生成模块
+### Overview
 
-### 蓝牙指令
+Coyote contains two independent pulse generators, one for each channel (A and B). Each generator is controlled by its channel intensity and Pulse data. Six parameters determine its output: channel intensity, channel intensity soft limit, Pulse frequency, Pulse intensity, Frequency Balance Parameter 1, and Frequency Balance Parameter 2.
 
-与 V2 协议不同的是，数据无需进行大小端转换
+### Bluetooth Commands
 
-#### B0 指令
+Unlike V2, this protocol does not require byte-order conversion.
 
-B0 指令写入通道强度变化和通道波形数据，指令数据长度为 20 字节，每 100ms 写入。两通道的数据都在同一条指令中。
+#### B0 Command
 
-```
-0xB0 (1byte 指令 HEAD)+ 序列号 (4bits)+ 强度值解读方式 (4bits)+A 通道强度设定值 (1byte)+B 通道强度设定值 (1byte)+A 通道波形频率 4 条 (4bytes)+A 通道波形强度 4 条 (4bytes)+B 通道波形频率 4 条 (4bytes)+B 通道波形强度 4 条 (4bytes)
-```
-
-##### 序列号
-
-序列号范围 (0b0000 \~ 0b1111), 如果输入的数据中修改了脉冲主机的通道强度，设置序列号 >0, 脉冲主机会通过 B1 回应消息以相同的序列号将修改后的通道强度从特性 0x150B 返回，如果不需要脉冲主机反馈通道强度，则序列号设置 0b0000 即可。
-另外，为避免产生问题，当通过 B0 指令修改通道强度且序列号不为 0 时，建议等待 150B 返回 B1 且为相同序列号的信息后，再对通道强度进行修改。
-
-##### 强度值解读方式
-
-强度值解读方式的 4bits 分为两个部分，高两位 bits 代表 A 通道解读方式，低两位 bits 代表 B 通道解读方式。<br /> 解读方式:<br />0b00 -> 代表对应通道强度不做改变，对应通道的强度设定值无论是什么都无效 < br />0b01 -> 代表对应通道强度相对增加变化，若 A 通道强度设定值为 15 (10 进制)，那么 A 通道强度增加 15<br />0b10 -> 代表对应通道强度相对减少变化，若 A 通道强度设定值为 17 (10 进制)，那么 A 通道强度减少 17<br />0b11 -> 代表对应通道强度绝对变化，若 A 通道强度设定值为 32，那么 A 通道强度设置为 32
-
-> e.g<br /> 假设当前脉冲主机的 A 通道强度为 10，B 通道强度为 10。<br />1. 强度值解读方式 = 0b0000，A 通道强度设定值 = 5，B 通道强度设置定 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 10，B 通道强度 = 10<br />2. 强度值解读方式 = 0b0100，A 通道强度设定值 = 5，B 通道强度设定值 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 15，B 通道强度 = 10<br />3. 强度值解读方式 = 0b0010，A 通道强度设定值 = 5，B 通道强度设定值 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 10，B 通道强度 = 2<br />4. 强度值解读方式 = 0b0011，A 通道强度设定值 = 5，B 通道强度设定值 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 10，B 通道强度 = 8<br />5. 强度值解读方式 = 0b0110，A 通道强度设定值 = 5，B 通道强度设定值 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 15，B 通道强度 = 2<br />6. 强度值解读方式 = 0b1101，A 通道强度设定值 = 5，B 通道强度设定值 = 8，B0 指令输入后，脉冲主机的 A 通道强度 = 5，B 通道强度 = 18
-
-##### 通道强度设定值
-
-通道强度设定值长度为 1 字节，值有效范围 (0~ 200), 输入范围外的值均以 0 处理。郊狼主机每个通道的强度绝对范围也是 (0 ~ 200)。
-
-> e.g<br /> 假设当前脉冲主机的 A 通道强度为 10<br />1. 强度值解读方式 = 0b0100，A 通道强度设定值 = 195，B0 指令输入后，脉冲主机的 A 通道强度 = 200<br />2. 强度值解读方式 = 0b1000，A 通道强度设定值 = 20，B0 指令输入后，脉冲主机的 A 通道强度 = 0<br />3. 强度值解读方式 = 0b0100，A 通道强度设定值 = 201，B0 指令输入后，脉冲主机的 A 通道强度 = 10<br />4. 强度值解读方式 = 0b1100，A 通道强度设定值 = 201，B0 指令输入后，脉冲主机的 A 通道强度 = 0<br />
-
-##### 通道波形频率 / 通道波形强度
-
-通道波形频率长度 1byte, 值范围 (10~ 240)，通道波形强度 1byte，值范围 (0 ~ 100)。
-在 B0 指令中，每 100ms 要发送两通道各 4 组波形频率和波形强度，每组频率 - 强度代表了 25ms 的波形输出，4 组数据代表了 100ms 数据。
-在波形数据中，若某通道的输入值不在有效范围，则脉冲主机会放弃掉该通道全部 4 组数据。
-
-另外对于通道波形频率，在您的程序中可以将值范围限制在 (10 ~ 1000), 然后通过以下算法换算为要发送的通道波形频率：
+The B0 command updates channel intensity and Pulse data. Send this 20-byte command every 100 ms. Both channels are included in the same command.
 
 ```
-输入值范围 (10 ~ 1000)
-波形频率 = when (输入值){
+0xB0 (1-byte command header) + sequence number (4 bits) + intensity interpretation mode (4 bits) + channel A intensity setting (1 byte) + channel B intensity setting (1 byte) + 4 channel A Pulse frequency values (4 bytes) + 4 channel A Pulse intensity values (4 bytes) + 4 channel B Pulse frequency values (4 bytes) + 4 channel B Pulse intensity values (4 bytes)
+```
+
+##### Sequence Number
+
+The sequence number ranges from `0b0000` to `0b1111`. When changing channel intensity, use a nonzero sequence number to request a B1 response containing the updated intensities and the same sequence number on characteristic `0x150B`. Set it to `0b0000` if no intensity response is needed.
+
+When changing intensity with a nonzero sequence number, wait for a B1 response with the matching sequence number before making another intensity change.
+
+##### Intensity Interpretation Mode
+
+The upper two bits specify how to interpret channel A's intensity setting; the lower two bits specify the mode for channel B.
+
+| Bits | Behavior |
+| --- | --- |
+| 0b00 | Leave the channel unchanged; ignore its intensity setting. |
+| 0b01 | Increase by the setting. For example, 15 adds 15 to the current intensity. |
+| 0b10 | Decrease by the setting. For example, 17 subtracts 17 from the current intensity. |
+| 0b11 | Set an absolute intensity. For example, 32 sets the channel to 32. |
+
+Each example below starts with both channels at intensity 10:
+
+| Mode | A setting | B setting | Resulting A intensity | Resulting B intensity |
+| --- | --- | --- | --- | --- |
+| 0b0000 | 5 | 8 | 10 | 10 |
+| 0b0100 | 5 | 8 | 15 | 10 |
+| 0b0010 | 5 | 8 | 10 | 2 |
+| 0b0011 | 5 | 8 | 10 | 8 |
+| 0b0110 | 5 | 8 | 15 | 2 |
+| 0b1101 | 5 | 8 | 5 | 18 |
+
+##### Channel Intensity Setting
+
+Each setting is one byte, with a valid range of 0–200. Out-of-range settings are treated as 0. Each channel's absolute intensity range is also 0–200.
+
+Each example below starts with channel A at intensity 10:
+
+| Mode | A setting | Resulting A intensity |
+| --- | --- | --- |
+| 0b0100 | 195 | 200 |
+| 0b1000 | 20 | 0 |
+| 0b0100 | 201 | 10 |
+| 0b1100 | 201 | 0 |
+
+##### Channel Pulse Frequency and Intensity
+
+Each Pulse frequency value occupies one byte and ranges from 10 to 240. Each Pulse intensity value occupies one byte and ranges from 0 to 100.
+
+Every B0 command contains four frequency/intensity pairs per channel. Each pair represents 25 ms of output, so four pairs cover 100 ms. If any value for a channel is out of range, the device discards all four pairs for that channel.
+
+Your application can use Pulse frequency values from 10 to 1000, then convert them to the transmitted range as follows:
+
+```
+Input range: 10–1000
+pulseFrequency = when (inputValue) {
     in 10..100 -> {
-        输入值
+        inputValue
     }
     in 101..600 -> {
-        (输入值 - 100)/5 + 100
+        (inputValue - 100)/5 + 100
     }
     in 601..1000 -> {
-        (输入值 - 600)/10 + 200
+        (inputValue - 600)/10 + 200
     }
     else -> {
         10
@@ -75,56 +101,58 @@ B0 指令写入通道强度变化和通道波形数据，指令数据长度为 2
 }
 ```
 
-> e.g<br /> 以下举例 A 通道波形数据 < br />1. 波形频率 4 条 ={10,10,20,30}，波形强度 ={0,5,10,50}，B0 指令输入后，A 通道正常输出波形 < br />2. 波形频率 4 条 ={10,10,20,30}，波形强度 ={0,5,10,101}，B0 指令输入后，A 通道放弃全部 4 组数据，不输出波形
+For example, for channel A:
 
-- Tips 如果当前只想向单个通道输出波形，则将另一个通道的数据中输入至少一个非有效数据 (一条大于 100 的波形强度值)，如上 e.g 所示。
+1. Frequencies `{10,10,20,30}` and intensities `{0,5,10,50}` produce normal output.
+2. Frequencies `{10,10,20,30}` and intensities `{0,5,10,101}` cause all four pairs to be discarded, producing no output.
 
-#### BF 指令
+- To output a Pulse on only one channel, include at least one invalid value in the other channel's data, such as a Pulse intensity above 100.
 
-> ### 🚨BF 指令写入之后会直接生效，没有返回值，所以每次重连设备之后都必须重新写入 BF 指令设置软上限，防止出现意外的软上限值。🚨
+#### BF Command
 
-BF 指令写入脉冲主机的通道强度软上限 + 波形频率平衡参数 + 波形强度平衡参数，指令数据长度为 7 字节。
+> **⚠️ BF takes effect immediately and has no response. Send BF to set the soft limits after every reconnection to prevent unexpected soft-limit values.**
 
-```
-0xBF (1byte 指令 HEAD)+AB 两通道强度软上限 (2bytes)+AB 两通道波形频率平衡参数 (2bytes)+AB 两通道波形强度平衡参数 (2bytes)
-```
-
-##### 通道强度软上限
-
-通道强度软上限可以限制脉冲主机通道强度能达到的最大值，并且该设置断电保存，值范围 (0~ 200)，输入范围外的值则不会修改软上限。
-假设设置 AB 通道软上限为 150 和 30，那么通过拨动滚轮或 B0 指令无论如何修改强度，A 通道的通道强度只会在范围 (0 ~ 150),B 通道的通道强度只会在范围 (0 \~ 30)，脉冲主机的通道强度一定不会超过软上限。
-
-##### 频率平衡参数 1
-
-波形频率平衡参数会调整波形高低频的感受，并且该设置断电保存，值范围 (0 \~ 255)
-本参数控制固定通道强度下，不同频率波形的相对体感强度。值越大，低频波形冲击感越强。
-
-##### 频率平衡参数 2
-
-波形强度平衡参数会调整波形脉冲宽度，并且该设置断电保存，值范围 (0 \~ 255)
-本参数控制固定通道强度下，不同频率波形的相对体感强度。值越大，低频波形刺激越强。
-
-### 蓝牙回应消息
-
-脉冲主机所有的数据回调都通过 0x180C->0x150B 的特性 Notify 返回，请在成功连接脉冲主机后对该特性绑定 notify。
-
-#### B1 消息
-
-当脉冲主机强度发生变化时，会立刻通过 B1 消息返回当前的强度值。如果是由于 B0 指令导致的强度变化，返回 B1 指令中序列号将会与引起此变化的命令所包含的序列号相同，否则序列号为 0。
+The 7-byte BF command sets the channel intensity soft limits, Pulse frequency balance parameters, and Pulse intensity balance parameters.
 
 ```
-0xB1 (1byte 指令 HEAD)+ 序列号 (1byte)+A 通道当前实际强度 (1byte)+B 通道当前实际强度 (1byte)
+0xBF (1-byte command header) + channel A/B intensity soft limits (2 bytes) + channel A/B Pulse frequency balance parameters (2 bytes) + channel A/B Pulse intensity balance parameters (2 bytes)
 ```
 
-#### BE 消息（已弃用）
+##### Channel Intensity Soft Limit
 
-### 更多例子
+The soft limit caps the maximum channel intensity and persists across power cycles. Valid values are 0–200; out-of-range values leave the existing limit unchanged.
 
-综上所述，不同于 V2 的通道强度 / 波形数据的是，V3 的两通道强度和两通道波形数据都捏合在了 B0 这一个指令中，以下举若干例子：
+For example, with limits of 150 for A and 30 for B, the intensities remain within 0–150 and 0–30 respectively, whether changed using a Wheel or a B0 command. Channel intensity cannot exceed its soft limit.
 
-> 数据 = 指令 HEAD + 序列号 + 强度值解读方式 + A 通道强度设定值 + B 通道强度设定值 + A 通道波形频率 {x,x,x,x} + A 通道波形强度 {x,x,x,x} + B 通道波形频率 {x,x,x,x} + B 通道波形强度 {x,x,x,x}
+##### Frequency Balance Parameter 1
 
-#### No.1 不修改通道强度，A 通道连续输出波形:
+The Pulse frequency balance parameter adjusts the relative sensation of low- and high-frequency Pulses at a fixed channel intensity. Higher values produce a stronger throbbing sensation at low frequencies. It ranges from 0 to 255 and persists across power cycles.
+
+##### Frequency Balance Parameter 2
+
+The Pulse intensity balance parameter adjusts pulse width and the relative sensation of different frequencies at a fixed channel intensity. Higher values make low-frequency Pulses feel stronger. It ranges from 0 to 255 and persists across power cycles.
+
+### Bluetooth Response Messages
+
+All stimulator data is returned through notifications on `0x180C -> 0x150B`. Subscribe to this characteristic after connecting.
+
+#### B1 Message
+
+When channel intensity changes, the device immediately returns the current intensities in a B1 message. For a change caused by B0, the response uses the sequence number from that command; otherwise, the sequence number is 0.
+
+```
+0xB1 (1-byte command header) + sequence number (1 byte) + actual channel A intensity (1 byte) + actual channel B intensity (1 byte)
+```
+
+#### BE Message (Deprecated)
+
+### More Examples
+
+Unlike V2, V3 combines both channels' intensities and Pulse data in a single B0 command:
+
+> Data = command header + sequence number + intensity interpretation mode + channel A intensity setting + channel B intensity setting + channel A Pulse frequencies {x,x,x,x} + channel A Pulse intensities {x,x,x,x} + channel B Pulse frequencies {x,x,x,x} + channel B Pulse intensities {x,x,x,x}
+
+#### No.1: Continuous Pulse Output on A, Without Changing Channel Intensity
 
 ```
 1-> 0xB0+0b0000+0b0000+0+0+{10,10,10,10}+{0,10,20,30}+{0,0,0,0}+{0,0,0,101}(HEX:0xB00000000A0A0A0A000A141E0000000000000065)
@@ -134,7 +162,7 @@ BF 指令写入脉冲主机的通道强度软上限 + 波形频率平衡参数 +
 ...
 ```
 
-#### No.2 脉冲主机当前 A 通道强度 = 10，A 通道连续输出波形:
+#### No.2: Continuous Pulse Output on A, Starting at Intensity 10
 
 ```
 1-> 0xB0+0b0000+0b0100+5+0+{10,10,10,10}+{0,10,20,30}+{0,0,0,0}+{0,0,0,101}(HEX:0xB00405000A0A0A0A000A141E0000000000000065)
@@ -144,24 +172,24 @@ BF 指令写入脉冲主机的通道强度软上限 + 波形频率平衡参数 +
 ...
 ```
 
-1 中设置 A 通道强度 + 5, 设置后脉冲主机 A 通道强度会 + 5，脉冲主机通道强度变为 15，但不会通过 150B 返回修改后的通道强度，因为序列号 = 0.
+Step 1 adds 5 to channel A, bringing its intensity to 15. No intensity response is returned on 150B because the sequence number is 0.
 
-4 中设置 A 通道强度 + 10，设置后脉冲主机 A 通道强度会 + 10，脉冲主机通道强度变为 25，并通过 150B 返回 A 通道强度 = 25，序列号 = 1.
+Step 4 adds 10 to channel A, bringing its intensity to 25. The device returns channel A intensity 25 with sequence number 1 on 150B.
 
-#### No.3 脉冲主机当前 A 通道强度 = 10，A 通道连续输出波形:
+#### No.3: Continuous Pulse Output on A, Starting at Intensity 10
 
 ```
 1-> 0xB0+0b0000+0b0000+0+0+{10,10,10,10}+{0,10,20,30}+{0,0,0,0}+{0,0,0,101}(HEX:0xB00000000A0A0A0A000A141E0000000000000065)
 2-> 0xB0+0b0000+0b0000+0+0+{15,15,15,15}+{40,50,60,70}+{0,0,0,0}+{0,0,0,101}(HEX:0xB00000000F0F0F0F28323C460000000000000065)
-3-> 向上拨动一次 A 通道拨轮后放开 < br/>
+3-> Flick channel A's Wheel upward once, then release it.
 4-> 0xB0+0b0000+0b0000+0+0+{30,30,30,30}+{80,90,100,100}+{0,0,0,0}+{0,0,0,101}(HEX:0xB00000001E1E1E1E505A64640000000000000065)
 5-> 0xB0+0b0000+0b0000+0+0+{40,60,80,100}+{100,90,90,90}+{0,0,0,0}+{0,0,0,101}(HEX:0xB0000000283C5064645A5A5A0000000000000065)
 ...
 ```
 
-3 中向上拨动一次 A 通道拨轮后放开，脉冲主机 A 通道强度会 + 1，并通过 150B 返回 A 通道强度 = 11，序列号 = 0.
+In step 3, flicking channel A's Wheel upward once and releasing it adds 1 to the intensity. The device returns channel A intensity 11 with sequence number 0 on 150B.
 
-#### No.4 不修改通道强度，AB 两通道均连续输出波形:
+#### No.4: Continuous Pulse Output on Both Channels, Without Changing Intensity
 
 ```
 1-> 0xB0+0b0000+0b0000+0+0+{10,10,10,10}+{0,10,20,30}+{10,10,10,10}+{0,0,0,0}(HEX:0xB00000000A0A0A0A000A141E0A0A0A0A00000000)
@@ -171,18 +199,18 @@ BF 指令写入脉冲主机的通道强度软上限 + 波形频率平衡参数 +
 ...
 ```
 
-关于序列号与强度输入的例子 (以 A 通道举例):
+Example of handling sequence numbers and intensity input for channel A:
 
 ```
-isInputAllowed = true (当前是否允许输入强度)
-accumulatedStrengthValueA = 0 (A 通道未写入的累计强度变化值)
-deviceStrengthValueA = 0 (脉冲主机当前 A 通道强度值)
-orderNo = 0 (序列号)
-inputOrderNo = 0 (B0 写入的序列号)
-strengthParsingMethod = 0b0000 (强度值解读方式)
-strengthSettingValueA = 0 (A 通道强度设定值)
+isInputAllowed = true (whether intensity input is currently allowed)
+accumulatedStrengthValueA = 0 (accumulated channel A intensity change not yet written)
+deviceStrengthValueA = 0 (current channel A intensity on the stimulator)
+orderNo = 0 (sequence number)
+inputOrderNo = 0 (sequence number written in B0)
+strengthParsingMethod = 0b0000 (intensity interpretation mode)
+strengthSettingValueA = 0 (channel A intensity setting)
 
-A 通道强度相关数据处理函数
+Function to process channel A intensity data
 fun strengthDataProcessingA ():Unit {
     if (isInputAllowed == true) {
          strengthParsingMethod = if (accumulatedStrengthValueA > 0){
@@ -195,7 +223,7 @@ fun strengthDataProcessingA ():Unit {
          orderNo += 1
          inputOrderNo = orderNo
          isInputAllowed = false
-         strengthSettingValueA = abs (accumulatedStrengthValueA)(取绝对值)
+         strengthSettingValueA = abs (accumulatedStrengthValueA)(absolute value)
          accumulatedStrengthValueA = 0
      } else {
          orderNo = 0
@@ -203,10 +231,10 @@ fun strengthDataProcessingA ():Unit {
          strengthSettingValueA = 0
      }
 }
-A 通道强度回应消息处理函数
+Function to handle channel A intensity responses
 fun strengthDataCallback (returnOrderNo : Int,returnStrengthValueA : Int):Unit {
-    //returnOrderNo 返回输入的序列号
-    //returnStrengthValueA 返回脉冲主机当前 A 通道强度
+    //returnOrderNo returned input sequence number
+    //returnStrengthValueA returned current channel A intensity
 
     deviceStrengthValueA = returnStrengthValueA
     if (returnOrderNo == inputNo){
@@ -216,7 +244,7 @@ fun strengthDataCallback (returnOrderNo : Int,returnStrengthValueA : Int):Unit {
          inputOrderNo = 0
      }
 }
-A 通道强度设置 0
+Set channel A intensity to 0
 fun strengthZero ():Unit {
     strengthParsingMethod = 0b1100
     strengthSettingValueA = 0
@@ -225,63 +253,63 @@ fun strengthZero ():Unit {
 }
 ```
 
-以下顺序为时间顺序，但序号并不代表某个具体时刻:
+The following steps are chronological; the step numbers do not represent specific timestamps:
 
 ```
-1 -> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 1)
-2 -> (100ms 周期) B0 准备写入
+1 -> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 1)
+2 -> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0001) + strengthParsingMethod (0b0100) + strengthSettingValueA (1) + ......)
-3 -> (100ms 周期) B0 准备写入
+3 -> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0000) + strengthParsingMethod (0b0000) + strengthSettingValueA (1) + ......)
-3 -> 150B 返回 A 通道强度值
+3 -> 150B returns channel A intensity
      BLE NOTIFY 150B (0xB1 + returnOrderNo (1) + returnStrengthValueA (1) + ......)
-     返回的序列号 = 1，返回的 A 通道强度 = 1
+     returned sequence number = 1, returned channel A intensity = 1
      strengthDataCallback (1,1)
-4 -> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 1)
-5 -> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 2)
-6 -> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 3)
-7 -> (100ms 周期) B0 准备写入
+4 -> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 1)
+5 -> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 2)
+6 -> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 3)
+7 -> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0001) + strengthParsingMethod (0b0100) + strengthSettingValueA (3) + ......)
-8 -> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 1)
-9 -> (100ms 周期) B0 准备写入
+8 -> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 1)
+9 -> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0000) + strengthParsingMethod (0b0000) + strengthSettingValueA (0) + ......)
-10-> 150B 返回 A 通道强度值
+10-> 150B returns channel A intensity
      BLE NOTIFY 150B (0xB1 + returnOrderNo (1) + returnStrengthValueA (4) + ......)
-     返回的序列号 = 1，返回的 A 通道强度 = 4
+     returned sequence number = 1, returned channel A intensity = 4
      strengthDataCallback (1,4)
-11-> 按下 A 通道强度‘+’按钮
-     accumulatedStrengthValueA += 1 (值 = 2)
-12-> (100ms 周期) B0 准备写入
+11-> Press the channel A intensity '+' button
+     accumulatedStrengthValueA += 1 (value = 2)
+12-> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0001) + strengthParsingMethod (0b0100) + strengthSettingValueA (2) + ......)
-13-> 按下 A 通道强度‘-’按钮
-     accumulatedStrengthValueA -= 1 (值 = -1)
-14-> 150B 返回 A 通道强度值
+13-> Press the channel A intensity '-' button
+     accumulatedStrengthValueA -= 1 (value = -1)
+14-> 150B returns channel A intensity
      BLE NOTIFY 150B (0xB1 + returnOrderNo (1) + returnStrengthValueA (6) + ......)
-     返回的序列号 = 1，返回的 A 通道强度 = 6
+     returned sequence number = 1, returned channel A intensity = 6
      strengthDataCallback (1,6)
-15-> (100ms 周期) B0 准备写入
+15-> (100ms cycle) B0 prepare to write
      strengthDataProcessingA ()
      BLE WRITE 150A (0xB0 + orderNo (0b0010) + strengthParsingMethod (0b1000) + strengthSettingValueA (1) + ......)
-16-> 150B 返回 A 通道强度值
+16-> 150B returns channel A intensity
      BLE NOTIFY 150B (0xB1 + returnOrderNo (2) + returnStrengthValueA (5) + ......)
-     返回的序列号 = 2，返回的 A 通道强度 = 5
+     returned sequence number = 2, returned channel A intensity = 5
      strengthDataCallback (1,5)
-17-> (100ms 周期) B0 准备写入
+17-> (100ms cycle) B0 prepare to write
      strengthZero ()
      BLE WRITE 150A (0xB0 + orderNo (0b0001) + strengthParsingMethod (0b1100) + strengthSettingValueA (0) + ......)
-18-> 150B 返回 A 通道强度值
+18-> 150B returns channel A intensity
      BLE NOTIFY 150B (0xB1 + returnOrderNo (1) + returnStrengthValueA (0) + ......)
-     返回的序列号 = 1，返回的 A 通道强度 = 0
+     returned sequence number = 1, returned channel A intensity = 0
      strengthDataCallback (1,0)
 ......
 ```

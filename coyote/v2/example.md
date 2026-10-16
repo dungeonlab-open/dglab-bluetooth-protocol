@@ -1,8 +1,10 @@
-## APP 中内置的波形转换为 V2 格式
+## Built-in App Pulses in V2 Format
 
-（以下数据仅为一个通道数据，请根据蓝牙协议拼接成完整 AB 通道数据后使用）
+[简体中文](example_cn.md)
 
-### 呼吸
+The data below represents a single channel. Assemble the complete data for channels A and B according to the Bluetooth protocol before use.
+
+### Breathing
 
 ```
 x = 1,y = 9,z = 0,bytes = 210100
@@ -19,7 +21,7 @@ x = 1,y = 9,z = 0,bytes = 210100
 x = 1,y = 9,z = 0,bytes = 210100
 ```
 
-### 潮汐
+### Tide
 
 ```
 x = 1,y = 9,z = 0,bytes = 210100

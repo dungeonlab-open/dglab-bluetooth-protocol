@@ -1,87 +1,99 @@
-## 郊狼情趣脉冲主机 V2
+## Coyote Stimulator V2
 
-| 服务 UUID | 特性 UUID |     属性     |      名称       | 大小 (BYTE) |
-|:-------:|:-------:|:----------:|:-------------:|:---------:|
-| 0x180A  | 0x1500  |   读 / 通知   | Battery_Level |   1 字节    |
-| 0x180B  | 0x1504  | 读 / 写 / 通知 |    PWM_AB2    |   3 字节    |
-| 0x180B  | 0x1505  |   读 / 写    |    PWM_A34    |   3 字节    |
-| 0x180B  | 0x1506  |   读 / 写    |    PWM_B34    |   3 字节    |
+[简体中文](README_CN.md)
 
-|      名称       |    说明    |                        通信数据定义                        |
-|:-------------:|:--------:|:----------------------------------------------------:|
-| Battery_Level |  设备当前电量  |                   1byte (整数 0-100)                   |
-|    PWM_AB2    | AB 两通道强度 | 23-22bit (保留)	21-11bit (A 通道实际强度)	10-0bit (B 通道实际强度) |
-|    PWM_A34    | B 通道波形数据 | 23-20bit (保留)	19-15bit (Az)	14-5bit (Ay)	4-0bit (Ax) |
-|    PWM_B34    | A 通道波形数据 | 23-20bit (保留)	19-15bit (Bz)	14-5bit (By)	4-0bit (Bx) |
+| Service UUID | Characteristic UUID | Properties | Name | Size |
+|:---:|:---:|:---:|:---:|:---:|
+| 0x180A | 0x1500 | Read / Notify | Battery_Level | 1 byte |
+| 0x180B | 0x1504 | Read / Write / Notify | PWM_AB2 | 3 bytes |
+| 0x180B | 0x1505 | Read / Write | PWM_A34 | 3 bytes |
+| 0x180B | 0x1506 | Read / Write | PWM_B34 | 3 bytes |
 
-### 蓝牙名称
+| Name | Description | Data layout |
+|:---:|:---:|:---|
+| Battery_Level | Current battery level | 1 byte (integer, 0–100) |
+| PWM_AB2 | Channel A/B intensity | Bits 23–22: reserved; bits 21–11: actual channel A intensity; bits 10–0: actual channel B intensity |
+| PWM_A34 | Channel B Pulse data | Bits 23–20: reserved; bits 19–15: Az; bits 14–5: Ay; bits 4–0: Ax |
+| PWM_B34 | Channel A Pulse data | Bits 23–20: reserved; bits 19–15: Bz; bits 14–5: By; bits 4–0: Bx |
 
-脉冲主机 2.0 : D-LAB ESTIM01
+### Bluetooth Name
 
-> 基础 UUID: 955A`xxxx`-0FE2-F5AA-A094-84B8D4F3E8AD (将 xxxx 替换为服务的 UUID)
+Stimulator 2.0: `D-LAB ESTIM01`
 
-### 基本原理
-郊狼内置了两组独立的脉冲生成模块，分别对应 A，B 两个通道。每组脉冲生成模块又由电源模块和波形控制模块两部分构成。我们通过蓝牙协议中的 S,X,Y,Z 四个变量来控制脉冲生成模块
+> Base UUID: `955Axxxx-0FE2-F5AA-A094-84B8D4F3E8AD`. Replace `xxxx` with the service UUID.
 
-### 电源模块 (S)
-> S: PWM_AB2 特性
+### Overview
 
-电源模块控制脉冲的电压，也就是通道的强度（App 界面中圆环内的数字)，对应蓝牙协议中的参数 S，范围是【0-2047】（不能超过 2047）。在我们的 APP 中每增加一点强度是增加 7 (脉冲主机中设置的实际强度值为 APP 中显示值的 7 倍)。当我们向 APP 内写入不同的参数 S 的值时，通道强度会立刻改变并且一直保持。
+Coyote contains two independent pulse generators, one for each channel (A and B). Each generator consists of a power module and a Pulse control module. Four protocol parameters—S, X, Y, and Z—control these modules.
 
-### 波形控制模块 (X Y Z)
-> X: PWM_A34 或 PWM_B34 中 4-0bit 的 5bits 数据 < br/>
-> Y: PWM_A34 或 PWM_B34 中 14-5 的 10bits 数据 < br/>
-> Z: PWM_A34 或 PWM_B34 中 19-15 的 5bits 数据 < br/>
+### Power Module (S)
 
-波形控制模块控制脉冲出现的规律以及脉冲宽度的变化。脉冲出现的规律和脉冲宽度的变化被以内置波形或者自定义波形的形式保存下来。
+> S: `PWM_AB2` characteristic
 
-### 脉冲规律控制
-郊狼的程序把每一秒分割成 1000 毫秒，在每个毫秒内都可以产生一次脉冲。我们使用蓝牙协议中的 X,Y 两个参数来编码脉冲产生的规律，其中 X 代表连续 X 毫秒发出 X 个脉冲，Y 表示 X 个脉冲过后会间隔 Y 毫秒再发出 X 个脉冲并循环。X 的范围是【0-31】，Y 的范围是【0-1023】
+The power module controls the pulse voltage, or channel intensity (the number inside the ring in the app). Parameter S ranges from 0 to 2047 and **must not exceed 2047**. Each intensity step in the official app corresponds to an increase of 7: the device value is seven times the displayed value. Writing a new S value changes the channel intensity immediately, and that value remains in effect.
 
-> e.g.<br/>
-参数【1,9】代表每隔 9ms 发出 1 个脉冲，总共耗时 10ms，也就是脉冲频率为 100hz。参数【5,95】代表每隔 95ms 发出 5 个脉冲，总共耗时 100ms，由于这五个脉冲连在一起并且持续时间仅为 5ms，因此使用者只会感受到一次（五合一）脉冲，因此在使用者的体感中脉冲频率为 10hz
+### Pulse Control Module (X, Y, Z)
 
-### Frequency 值
+> X: bits 4–0 (5 bits) of `PWM_A34` or `PWM_B34`<br />
+> Y: bits 14–5 (10 bits) of `PWM_A34` or `PWM_B34`<br />
+> Z: bits 19–15 (5 bits) of `PWM_A34` or `PWM_B34`
+
+The Pulse control module determines the timing and width of electrical pulses. These patterns are stored as built-in or custom Pulses.
+
+### Pulse Timing
+
+Coyote divides each second into 1,000 milliseconds and can generate one electrical pulse per millisecond. X specifies X consecutive pulses over X milliseconds; Y specifies the idle interval in milliseconds before the next group. X ranges from 0 to 31, and Y ranges from 0 to 1023.
+
+> For example, `[1,9]` produces one pulse followed by a 9 ms interval: a 10 ms cycle, or 100 Hz. `[5,95]` produces five pulses followed by a 95 ms interval: a 100 ms cycle. Because the five pulses occur together within 5 ms, they are perceived as one burst, giving a perceived frequency of 10 Hz.
+
+### Frequency Value
+
 ```
 Frequency = X + Y
-脉冲真实频率 = Frequency / 1000
+Actual pulse frequency = Frequency / 1000
 ```
-作为一个 X，Y 值互相之间关系的频率特征值。您可以通过设置 Frequency 值来计算出最合适的 X，Y 值。其取值范围 (10~1000)
 
-X,Y 的数据比例保持按照公式:
+`Frequency` describes the relationship between X and Y and ranges from 10 to 1000. Use it to calculate suitable X and Y values. The recommended ratio is given by:
+
 <div id="gongshi"><pre>
 X = ((Frequency / 1000)^ 0.5) * 15
 Y = Frequency - X
 </pre></div>
 
-此时效果是最好的。
+This ratio provides the best results. If X:Y exceeds 1:9 (for example, `[8,2]`), the overall sensation becomes weaker.
 
-如果 X:Y 的比例大于 1:9（例如【8,2】），波形的整体感受会变弱.
+### Pulse Width
 
-### 脉冲宽度控制
-一次脉冲由两个对称的正负单极性脉冲组成，两个单极性脉冲的高度 (电压) 由这个通道的强度决定。我们通过控制脉冲宽度的方式控制脉冲带来的感受的强弱。脉冲越宽，感受就越强，反之脉冲越窄感受约越弱。脉冲宽度的节奏性变化可以创造出不同的脉冲感受。
+Each electrical pulse consists of two symmetrical, opposite-polarity monophasic pulses. Their amplitude (voltage) is determined by the channel intensity. Wider pulses feel stronger; narrower pulses feel weaker. Rhythmic changes in width produce different sensations.
 
-脉冲宽度由参数 Z 控制，Z 的范围是【0-31】，实际的脉冲宽度为 Z*5us。也就是当 Z=20 时，脉冲宽度为 5*20us=100us
+Z controls pulse width and ranges from 0 to 31. The actual width is `Z * 5 µs`. For example, `Z = 20` gives `5 * 20 µs = 100 µs`.
 
-- Tips: 当脉冲宽度大于 100us（Z>20）时脉冲更容易引起刺痛
+- **Note:** Pulse widths above 100 µs (`Z > 20`) are more likely to cause a stinging sensation.
 
-### 创造不断变化的波形
-由于波形的参数并非固定不变而是在不断变化的。因此在郊狼的设计中每一组【X,Y,Z】参数仅在 0.1S 时间内有效。也就是说，每当你向设备写入一组【X,Y,Z】参数，设备都会输出参数对应的 0.1S 波形之后停止输出。也就是说如果你需要波形保持频率 100hz，宽度 100us 并且持续输出，那么你需要每隔 0.1 秒向设备发送参数【1,9,20】
+### Creating Changing Pulses
 
-- Tips: 您也可以每隔 0.1 秒修改 Frequency 的值，利用 [Frequency 公式](#gongshi) 来自动生成 X，Y 的值
+Pulse parameters can vary over time. Each `[X,Y,Z]` set is valid for only 0.1 s: after receiving a set, the device outputs the corresponding Pulse for 0.1 s and then stops. To sustain a 100 Hz output with a 100 µs width, send `[1,9,20]` every 0.1 s.
 
-### 更多例子
-如果你希望创造出一个频率不断变快的波形，可以尝试每 0.1 秒按照顺序向设备发送如下数据。
+- You can also change `Frequency` every 0.1 s and use the [Frequency formula](#gongshi) to calculate X and Y.
 
-【5,135,20】【5,125,20】【5,115,20】【5,105,20】【5,95,20】【4,86,20】【4,76,20】【4,66,20】【3,57,20】【3,47,20】【3,37,20】【2,28,20】【2,18,20】【1,14,20】【1,9,20】
+### More Examples
 
-如果你希望创造一个在两个频率之间不断切换的波形，可以尝试每 0.1 秒按照顺序向设备发送如下数据。
+For a Pulse whose frequency gradually increases, send these sets in order, one every 0.1 s:
 
-【5,95,20】【5,95,20】【5,95,20】【5,95,20】【5,95,20】【1,9,20】【1,9,20】【1,9,20】【1,9,20】【1,9,20】
+```
+[5,135,20][5,125,20][5,115,20][5,105,20][5,95,20][4,86,20][4,76,20][4,66,20][3,57,20][3,47,20][3,37,20][2,28,20][2,18,20][1,14,20][1,9,20]
+```
 
-如果你希望创造一个频率不变，但是带来 “推力” 感受的波形，可以尝试每 0.1 秒按照顺序向设备发送如下数据。
+For a Pulse that alternates between two frequencies, send these sets in order, one every 0.1 s:
 
-【1,9,4】【1,9,8】【1,9,12】【1,9,16】【1,9,18】【1,9,19】【1,9,20】【1,9,0】【1,9,0】【1,9,0】
+```
+[5,95,20][5,95,20][5,95,20][5,95,20][5,95,20][1,9,20][1,9,20][1,9,20][1,9,20][1,9,20]
+```
 
-- Tips: 人体对频率变化的感受较慢，因此如果频率变化过快将无法形成节奏感。而脉冲宽度的频繁变化则可以创造出多样的感觉
+For a constant-frequency Pulse with a pushing sensation, send these sets in order, one every 0.1 s:
 
+```
+[1,9,4][1,9,8][1,9,12][1,9,16][1,9,18][1,9,19][1,9,20][1,9,0][1,9,0][1,9,0]
+```
+
+- Frequency changes are perceived relatively slowly. Changes that are too fast may not create a sense of rhythm, whereas frequent pulse-width changes can produce a variety of sensations.

@@ -1,113 +1,109 @@
-# 负鼠振动控制器
+# Opossum Vibration Controller
 
-## 蓝牙特性
+[简体中文](README_CN.md)
 
-| 服务 UUID | 特征 UUID | 属性     | 名称          | 大小（Byte） | 说明             |
-|---------|---------|--------|-------------|----------|----------------|
-| 0x180C  | 0x150A  | 写      | WRITE       | 最长 20 字节 | 所有的指令都在改特性输入   |
-| 0x180C  | 0x150B  | 通知     | NOTIFY      | 最长 20 字节 | 所有的回应消息都在该特性返回 |
-| 0x180A  | 0x1500  | 读 / 通知 | READ/NOTIFY | 1 字节     | 电量信息           |
+## Bluetooth Characteristics
 
-> 基础 UUID：0000`xxxx`\-0000\-1000\-8000\-00805f9b34fb \(将 xxxx 替换为服务 / 特性 UUID\)
+| Service UUID | Characteristic UUID | Properties | Name | Size | Description |
+| --- | --- | --- | --- | --- | --- |
+| 0x180C | 0x150A | Write | WRITE | Up to 20 bytes | All commands are written here |
+| 0x180C | 0x150B | Notify | NOTIFY | Up to 20 bytes | All response messages are returned here |
+| 0x180A | 0x1500 | Read / Notify | READ/NOTIFY | 1 byte | Battery level |
 
-## 蓝牙名称
+> Base UUID: `0000xxxx-0000-1000-8000-00805f9b34fb`. Replace `xxxx` with the service or characteristic UUID.
 
-负鼠振动控制器：47L127000
+## Bluetooth Name
 
-> Tip：
-> 1. 设备开机后若搜索不到设备，请连按 5 次 设备开机按钮，屏幕中蓝牙图标变为黄色即可搜索
-> 2. 设备连接成功后，若上位机为 Android，则建议设置 MTU 到 144
+Opossum Vibration Controller: `47L127000`
 
-## 蓝牙指令
+> 1. If the powered-on device does not appear during discovery, press the power button five times in succession. The Bluetooth icon turns yellow when the device is discoverable.
+> 2. On Android, an MTU of 144 is recommended after connecting.
 
-负鼠所有的指令都通过 180C \-\> 150A 的特性写入
+## Bluetooth Commands
 
-### 50 指令
+Write all Opossum commands to characteristic `0x150A` in service `0x180C`.
 
-50 指令可设置 负鼠主指示灯颜色，以及开启 负鼠按键按下 / 抬起 主动上报（3bytes）。在 0x180C \-\> 0x150B 可接收到 上报的 按键 按下 / 抬起 信息
+### 50 Command
 
-```
-0x50 (1byte 指令 HEAD) + 01 (1byte 指示灯颜色) + 00/01 (1byte 停止 / 开启 按键状态集上报)
-```
-
-### B0 指令
-
-B0 指令写入通道振动波形数据（20bytes），每 100ms 写入。两通道数据都在同一条指令中
+The 50 command sets the main indicator color and enables or disables button press/release reports (3 bytes). Reports are received on `0x180C -> 0x150B`.
 
 ```
-0xB0 (1byte 指令 HEAD) + 00000000000000 (7bytes 00 占位) + xxxxxxxx (4bytes A 通道振动波形数据) + 00000000 (4bytes 00 占位) + xxxxxxxx (4bytes B 通道振动波形数据)
+0x50 (1-byte command header) + 01 (1-byte indicator color) + 00/01 (1 byte: disable / enable button-state reporting)
 ```
 
-#### A/B 通道振动波形数据
+### B0 Command
 
-4 字节数据代表 100ms 的跳蛋振动波形强度，单字节代表 25ms 振动波形强度
-
-振动波形强度值范围：0 ～ 100（0x00 ～ 0x64），4 字节中任何一个字节值超出范围，该条 B0 指令的对应通道的波形数据直接弃用
-
-### B3 指令
-
-B3 指令写入通道强度（3bytes）。两通道数据都在同一条指令中
+The B0 command writes vibration Pulse data for both channels in a single 20-byte command. Send it every 100 ms.
 
 ```
-0xB3 (1byte 指令 HEAD) + xx (1byte A 通道强度) + xx (1byte B 通道强度)
+0xB0 (1-byte command header) + 00000000000000 (7 bytes of 00 padding) + xxxxxxxx (4-byte channel A vibration Pulse data) + 00000000 (4 bytes of 00 padding) + xxxxxxxx (4-byte channel B vibration Pulse data)
 ```
 
-#### A/B 通道强度
+#### Channel A/B Vibration Pulse Data
 
-通道强度值范围：0 ～ 200（0x00 ～ 0xC8）
+The four bytes specify 100 ms of vibration Pulse intensity for the connected vibrator. Each byte represents 25 ms.
 
-修改某个通道强度，另一通道强度不变，则使用 0xFF 表示不作修改
+Valid intensity values are 0–100 (`0x00`–`0x64`). If any of the four bytes is out of range, all Pulse data for that channel in the B0 command is discarded.
+
+### B3 Command
+
+The B3 command sets the intensity of both channels in a single 3-byte command.
+
+```
+0xB3 (1-byte command header) + xx (1-byte channel A intensity) + xx (1-byte channel B intensity)
+```
+
+#### Channel A/B Intensity
+
+Valid values are 0–200 (`0x00`–`0xC8`). Use `0xFF` to leave a channel unchanged.
 
 ```TypeScript
-//e.g. 将 A 通道强度设置为 160，B 通道强度不变
+// Set channel A to 160; leave channel B unchanged.
 0xB3A0FF
-//e.g. 将 B 通道强度设置为 200，A 通道强度不变
+// Set channel B to 200; leave channel A unchanged.
 0xB3FFC8
-//e.g. 将 A 通道强度设置为 10，B 通道强度设置为 20
+// Set channel A to 10 and channel B to 20.
 0xB30A14
 ```
 
-### B2 指令
+### B2 Command
 
-B2 指令用于设置屏幕中通道强度的显示，由于负鼠连接到上位机后，通道强度值的显示需要上位机主动下发才能更新显示，所以在收到 B3 消息后，立刻通过 B2 指令更新屏幕的通道强度信息
-
-```
-0xB2 (1byte 指令 HEAD) + FFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0809 (21bytes 固定写入) + xx (1byte A 通道强度值 0x00 ～ 0xC8) + xx (1byte B 通道强度值 0x00 ～ 0xC8)
-```
-
-## 蓝牙回应消息
-
-负鼠所有的数据回调都通过 0x180C\-\>0x150B 的特性 Notify 返回，请在成功连接控制器后对该特性绑定 notify
-
-### B3 消息
-
-负鼠上报的通道强度信息（3bytes），当通过蓝牙指令或物理按键导致负鼠任何通道强度发生变化时，主动上报
+The B2 command updates the channel intensity values shown on the display. While Opossum is connected to a host, the host must send these updates explicitly. Send B2 immediately after receiving a B3 message to keep the display in sync.
 
 ```
-0xB3 (1byte 消息 HEAD) + xx (1byte A 通道强度) + xx (1byte B 通道强度)
+0xB2 (1-byte command header) + FFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0809 (21 fixed bytes) + xx (1-byte channel A intensity, 0x00–0xC8) + xx (1-byte channel B intensity, 0x00–0xC8)
 ```
 
-### D0 消息
+## Bluetooth Response Messages
 
-负鼠上报的 控制器物理按键的 按下 / 抬起 状态信息集（16bytes），当物理按键 按下 / 抬起时，主动上报
+All Opossum data is returned through notifications on `0x180C -> 0x150B`. Subscribe to this characteristic after connecting.
+
+### B3 Message
+
+Opossum reports channel intensity whenever either channel changes through a Bluetooth command or a physical button (3 bytes).
 
 ```
-0xD0 (1byte 消息 HEAD) + xx (1byte 报文序号)+ xxxx (2bytes 按钮状态集) + xxxxxxxxxxxxxxxxxxxxxxxx (12bytes 其他信息)
+0xB3 (1-byte message header) + xx (1-byte channel A intensity) + xx (1-byte channel B intensity)
 ```
 
-#### 报文序号
+### D0 Message
 
-0 ～ 255（0x00 ～ 0xFF）循环，每次上报自增
+Opossum reports the physical button states whenever a button is pressed or released (16 bytes).
 
-#### 按钮状态集
+```
+0xD0 (1-byte message header) + xx (1-byte sequence number) + xxxx (2-byte button-state bitmask) + xxxxxxxxxxxxxxxxxxxxxxxx (12 bytes of other information)
+```
 
-0b0 表示 抬起 / 未按下；0b1 表示 按下
+#### Sequence Number
 
-| bit 位置 | \+0    | \+1    | \+2  | \+8 | \+9  | \+10 | \+11  | \+12 | \+13 | \+14 | \+15 |
-|--------|--------|--------|------|-----|------|------|-------|------|------|------|------|
-| 物理按键   | SEL\_1 | SEL\_2 | HOME | Up  | Down | Left | Right | B    | A    | G    | D    |
+Increments with each report, wrapping from 255 to 0 (`0x00`–`0xFF`).
 
-![Image](images/img1.webp)
+#### Button-State Bitmask
 
+`0b0` means released / not pressed; `0b1` means pressed.
 
+| Bit offset | +0 | +1 | +2 | +8 | +9 | +10 | +11 | +12 | +13 | +14 | +15 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Physical button | SEL_1 | SEL_2 | HOME | Up | Down | Left | Right | B | A | G | D |
 
+![Opossum physical button layout](images/img1.webp)

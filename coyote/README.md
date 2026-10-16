@@ -1,79 +1,87 @@
-## 郊狼脉冲波形
+## Understanding Coyote Pulses
 
-本文我们将关于郊狼脉冲主机的波形协议进行部分解释，帮助广大郊狼爱好者更好理解脉冲波形的数据原理。
+[简体中文](README_CN.md)
 
-### 概念解释
+This document explains the Coyote stimulator Pulse protocol and the data that controls its output.
 
-#### 波形频率
+### Concepts
 
-郊狼的程序把每一秒分割成 1000 毫秒，在每个毫秒内都可以产生一次脉冲。我们通过控制脉冲和间隔来编码脉冲产生的规律。
+#### Pulse Frequency
 
-波形频率表示一个输出单元的时长 (输出单元由 X 个脉冲和 Y 个间隔组成)，单位是 ms。
+Coyote divides each second into 1,000 milliseconds and can generate one electrical pulse per millisecond. The output pattern is encoded as pulses and intervals between them.
 
-所以如果您希望输出一个 1Hz 的波形，实际上波形频率 = 1000ms；若输出 50Hz 的波形，波形频率 = 20ms。
+The **Pulse frequency** field represents the duration of one output unit, consisting of X pulses followed by Y milliseconds of idle time. Its unit is milliseconds, even though the protocol calls it a frequency.
 
-|  脉冲频率  |  波形频率  |
-|:------:|:------:|
-|  1Hz   | 1000ms |
-|  5Hz   | 200ms  |
-|  10Hz  | 100ms  |
-|  50Hz  |  20ms  |
-| 100Hz  |  10ms  |
-| 500Hz  |  2ms   |
-| 1000Hz |  1ms   |
+For example, a 1 Hz output corresponds to a Pulse frequency value of 1,000 ms; a 50 Hz output corresponds to 20 ms.
 
-在郊狼 V2 协议中，波形频率由 [X 和 Y](/coyote/v2/README.md) 共同决定，其中 X 代表连续 X 毫秒发出 X 个脉冲，Y 表示 X 个脉冲过后会间隔 Y 毫秒再发出 X 个脉冲并循环。
+| Electrical pulse frequency | Pulse frequency value |
+|:---:|:---:|
+| 1 Hz | 1000 ms |
+| 5 Hz | 200 ms |
+| 10 Hz | 100 ms |
+| 50 Hz | 20 ms |
+| 100 Hz | 10 ms |
+| 500 Hz | 2 ms |
+| 1000 Hz | 1 ms |
 
-> e.g<br/>
-参数【1,9】代表每隔 9ms 发出 1 个脉冲，总共耗时 10ms，也就是脉冲频率为 100hz，波形频率为 10ms。参数【5,95】代表每隔 95ms 发出 5 个脉冲，总共耗时 100ms，由于这五个脉冲连在一起并且持续时间仅为 5ms，因此使用者只会感受到一次（五合一）脉冲，因此在使用者的体感中脉冲频率为 10hz，波形频率为 100ms
+In the Coyote V2 protocol, [X and Y](/coyote/v2/README.md) together determine the Pulse frequency. X specifies X consecutive pulses over X milliseconds. After those pulses, the device waits Y milliseconds before repeating.
 
-在郊狼 V3 协议中，我们只提供了波形频率值的输入，而波形频率中脉冲 (X) 和间隔 (Y) 的分配由 V3 协议中的 [频率平衡参数 1](/coyote/v3/README.md) 来决定。
+> For example, `[1,9]` produces one pulse followed by a 9 ms interval: a 10 ms cycle, or 100 Hz. `[5,95]` produces five pulses followed by a 95 ms interval: a 100 ms cycle. Because the five pulses occur together within 5 ms, they are perceived as a single burst, giving a perceived frequency of 10 Hz and a Pulse frequency value of 100 ms.
 
-V3 协议中，波形频率的输入还需经过一次压缩转化，若用户想要波形频率线性变化，请参考以下例子。
+The Coyote V3 protocol accepts only a Pulse frequency value. The distribution between pulses (X) and idle time (Y) is determined by [Frequency Balance Parameter 1](/coyote/v3/README.md).
 
->e.g 1<br/>1. 确定要线性变化的脉冲频率，举例：1Hz，2Hz，3Hz，4Hz，5Hz，6Hz，7Hz，8Hz，9Hz，10Hz<br/>2. 转换为波形频率值: 1000ms,500ms,333ms,250ms,200ms,166ms,142ms,125ms,111ms,100ms<br/>3. 根据 V3 协议的转化公式，将波形频率转化为实际输入值：240，180，146，130,120,113,108,105,102,100<br/>4. 根据协议 4 个一组，不足的 10 补，每 100ms 向设备输入
+V3 also compresses the Pulse frequency value before transmission. To create a linear change, use one of the following approaches.
 
->e.g 2<br/>1. 确定要线性变化的波形频率值，举例：100ms，200ms，300ms，400ms，500ms，600ms，700ms，800ms，900ms，1000ms<br/>2. 根据 V3 协议的转化共识，将波形频率转化为实际输入值：100，120，140，160，180，200，210，220，230，240<br/>3. 根据协议 4 个一组，不足的 10 补，每 100ms 向设备输入
+> **Example 1: Linear change in electrical pulse frequency**
+> 1. Choose frequencies: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 Hz.
+> 2. Convert them to Pulse frequency values: 1000, 500, 333, 250, 200, 166, 142, 125, 111, 100 ms.
+> 3. Apply the V3 conversion formula: 240, 180, 146, 130, 120, 113, 108, 105, 102, 100.
+> 4. Send groups of four values every 100 ms, padding an incomplete group with 10.
 
-#### 波形频率与实际输入值的转化
+> **Example 2: Linear change in the Pulse frequency value**
+> 1. Choose values: 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 ms.
+> 2. Apply the V3 conversion formula: 100, 120, 140, 160, 180, 200, 210, 220, 230, 240.
+> 3. Send groups of four values every 100 ms, padding an incomplete group with 10.
 
-由于人体对于频率的细微变化感知并不敏感，波形频率 (输出单元) 越大，则波形频率 (输出单元时长) 变化相对应的脉冲频率变化越细微。另外这个转化可以压缩数据长度，可以以更短的数据进行交互
+#### Converting Pulse Frequency to the Transmitted Value
 
-| 波形频率  | 输出值 |  脉冲频率  |
-|:-----:|:---:|:------:|
-| 10ms  | 10  | 100Hz  |
-| 20ms  | 20  |  50Hz  |
-| 50ms  | 50  |  20Hz  |
-| 100ms | 100 |  10Hz  |
-| 110ms | 102 |  9Hz   |
-| 150ms | 110 | 6.6Hz  |
-| 650ms | 205 | 1.53Hz |
-| 680ms | 208 | 1.47Hz |
-| 750ms | 215 | 1.33Hz |
+Small frequency changes are difficult to perceive. As the output unit gets longer, a given change in its duration produces a smaller change in the electrical pulse frequency. This conversion also reduces the amount of data needed for transmission.
 
-#### 波形强度
+| Pulse frequency value | Transmitted value | Electrical pulse frequency |
+|:---:|:---:|:---:|
+| 10 ms | 10 | 100 Hz |
+| 20 ms | 20 | 50 Hz |
+| 50 ms | 50 | 20 Hz |
+| 100 ms | 100 | 10 Hz |
+| 110 ms | 102 | 9 Hz |
+| 150 ms | 110 | 6.6 Hz |
+| 650 ms | 205 | 1.53 Hz |
+| 680 ms | 208 | 1.47 Hz |
+| 750 ms | 215 | 1.33 Hz |
 
-一次脉冲由两个对称的正负单极性脉冲组成，两个单极性脉冲的高度 (电压) 由这个通道的强度决定。我们通过控制脉冲宽度的方式控制脉冲带来的感受的强弱。脉冲越宽，感受就越强，反之脉冲越窄感受约越弱。脉冲宽度的节奏性变化可以创造出不同的脉冲感受。
+#### Pulse Intensity
 
-在郊狼 V2 协议中，波形强度由 [Z](/coyote/v2/README.md) 决定，官方 APP 的值范围是 (0 ~ 20)，波形强度是一个相对值，所以并没有实际的单位来表示
+Each electrical pulse consists of two symmetrical, opposite-polarity monophasic pulses. Their amplitude (voltage) is determined by the channel intensity. Pulse width controls the perceived intensity: wider pulses feel stronger, and narrower pulses feel weaker. Rhythmic changes in width produce different sensations.
 
-在郊狼 V3 协议中，波形强度的值范围是 (0 ~ 100)，波形强度是一个相对值，所以并没有实际的单位来表示
+In the Coyote V2 protocol, [Z](/coyote/v2/README.md) determines Pulse intensity. The official app uses values from 0 to 20. Pulse intensity is a relative value with no physical unit.
 
-V2 的波形强度与 V3 的波形强度的映射关系: (V2 协议中 波形强度 20) ≈ (V3 协议中 波形强度 100)
+In V3, Pulse intensity ranges from 0 to 100 and is likewise unitless.
 
-### 输出窗口
+The approximate correspondence is: V2 Pulse intensity 20 ≈ V3 Pulse intensity 100.
 
-V2 协议的输出窗口为 100ms，V3 协议的输出窗口为 25ms，但每次设置的数据为 4 组，所以依然可以认为是 100ms。
+### Output Windows
 
-很多人对于波形频率值和输出窗口值的冲突表示困惑，波形频率时长是大于输出窗口的，那么对于下一个周期输入的数据设备将如何处理？
+V2 uses a 100 ms output window. V3 uses a 25 ms window, but four sets are sent together, so each transmission still covers 100 ms.
 
-我们的设备内部对于这一情况有一套相对复杂的处理方式，处理细节暂不描述，但给出几个建议：
+A Pulse frequency value can represent a duration longer than the output window. What happens when the next set of data arrives before that duration ends?
 
-1. 若希望稳定输出某个波形频率，建议稳定输入该波形频率值
-2. 若波形频率值大于输出窗口，下一周期输入的波形频率有所变化，那么真正的输出脉冲可能并非输入值所对应的效果，而是经过复杂方式处理后的效果
+The device handles this internally using a more complex process, whose details are outside the scope of this document. Keep the following in mind:
 
-### V2 协议波形 转化为 V3 协议波形
+1. To maintain a stable Pulse frequency, keep sending the same value.
+2. If the duration exceeds the output window and the next value differs, the resulting output may not directly match either input value because of this internal processing.
 
-V3 波形频率 = V2 (X + Y) 后，执行 (10 ~ 1000) -> (10 ~ 240) 的转化
+### Converting V2 Pulses to V3
 
-V3 波形强度 = V2 (Z * 5)
+V3 Pulse frequency: calculate V2 `(X + Y)`, then apply the conversion from `(10–1000)` to `(10–240)`.
+
+V3 Pulse intensity: V2 `(Z * 5)`.
